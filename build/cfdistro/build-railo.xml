@@ -284,7 +284,7 @@
 
 		<xmltask sourcebuffer="mail.buff">
 			<call path="mail/servers/*">
-				<param name="smtp" path="@virtual" default="smtp.gmail.com" />
+				<param name="smtp" path="@smtp" default="smtp.gmail.com" />
 				<param name="port" path="@port" default="587" />
 				<param name="username" path="@username" default="" />
 				<param name="password" path="@password" default="" />
@@ -335,7 +335,7 @@
 
 	<target name="railo.datasources.build" depends="exists.datasources.xml" if="exists.datasources.xml">
 
-		<xmltask source="datasources.${build.type}.xml">
+		<xmltask sourcebuffer="datasources.buff">
 			<call path="datasources/*">
 				<param name="name" path="@name" default="datasource" />
 				<param name="blob" path="@blob" default="false" />

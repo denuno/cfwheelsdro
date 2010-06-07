@@ -39,16 +39,26 @@
 				<param name="dirname" path="@dirname" default="" />
 
 				<actions>
-					<echo message="updating distro: ${src.dir}/@{dest}" />
-					<java classname="org.tmatesoft.svn.cli.SVN" fork="true" classpathref="svn.lib.path">
-						<arg value="update" />
-						<arg value="--non-interactive" />
-						<arg value="--username" />
-						<arg value="@{user}" />
-						<arg value="--password" />
-						<arg value="@{password}" />
-						<arg value="@{dest}" />
-					</java>
+					<available file="@{dest}" type="dir" property="exists.dest.dir" />
+					<antcontrib:if>
+						<equals arg1="${exists.dest.dir}" arg2="true" />
+						<then>
+							<echo message="updating distro: @{dest}" />
+							<java classname="org.tmatesoft.svn.cli.SVN" fork="true" classpathref="svn.lib.path">
+								<arg value="update" />
+								<arg value="--non-interactive" />
+								<arg value="--username" />
+								<arg value="@{user}" />
+								<arg value="--password" />
+								<arg value="@{password}" />
+								<arg value="@{dest}" />
+							</java>
+						</then>
+						<else>
+							<echo message="Src dir : @{dest} ain't there, downloading" />
+							<antcontrib:runtarget target="project.checkout.svn" />				
+						</else>
+					</antcontrib:if>
 				</actions>
 			</call>
 		</xmltask>
@@ -65,7 +75,7 @@
 				<param name="dirname" path="@dirname" default="" />
 
 				<actions>
-					<echo message="updating distro: ${src.dir}/@{dest}" />
+					<echo message="checkout to: @{dest}" />
 					<java classname="org.tmatesoft.svn.cli.SVN" fork="true" classpathref="svn.lib.path">
 						<arg value="co" />
 						<arg value="--non-interactive" />
@@ -92,7 +102,7 @@
 				<param name="dirname" path="@dirname" default="" />
 
 				<actions>
-					<echo message="importing src: ${src.dir}/@{dest}" />
+					<echo message="importing src: @{dest}" />
 					<java classname="org.tmatesoft.svn.cli.SVN" fork="true" classpathref="svn.lib.path">
 						<arg value="export" />
 						<arg value="--non-interactive" />
@@ -102,7 +112,7 @@
 						<arg value="--password" />
 						<arg value="@{password}" />
 						<arg value="@{uri}" />
-						<arg value="${src.dir}/@{dest}" />
+						<arg value="@{dest}" />
 					</java>
 				</actions>
 			</call>
@@ -119,8 +129,8 @@
 				<param name="password" path="@password" default="" />
 				<param name="dirname" path="@dirname" default="" />
 				<actions>
-					<echo message="checking revisions for: ${src.dir}/@{dest}" />
-					<property name="source-root" value="${src.dir}/@{dest}" />
+					<echo message="checking revisions for: @{dest}" />
+					<property name="source-root" value="@{dest}" />
 					<java classname="org.tmatesoft.svn.cli.SVN" dir="${source-root}" fork="true" classpathref="svn.lib.path" outputproperty="project.wc">
 						<arg value="info" />
 					</java>

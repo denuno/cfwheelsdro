@@ -15,8 +15,9 @@
 	<property name="build.sysclasspath" value="last" />
 	
 	<property name="runwar.war.path" location="${runwar.basedir}/../" />
-	<property name="runwar.war.contextpath" value="/railo" />
+	<property name="runwar.war.contextpath" value="${war.contextpath}" />
 	<property name="runwar.port" value="8080" />
+	<property name="runwar.maxmemory" value="256M" />
 	<property name="runwar.log.dir" value="${log.dir}/" />
 	<property name="runwar.stop.socket" value="8079" />
 	<property name="runwar.url" value="http://127.0.0.1:${runwar.port}${runwar.war.contextpath}/index.cfm" />
@@ -61,7 +62,7 @@
 		<echoproperties prefix="runwar"/>
 		<echo message="starting jetty"/>
 		<sequential>
-			<java classname="runwar.Start" classpathref="build.lib.path" fork="true" spawn="true">
+			<java classname="runwar.Start" classpathref="build.lib.path" fork="true" spawn="true" maxmemory="${runwar.maxmemory}">
 				<arg value="${runwar.war.path}" />
 				<arg value="${runwar.war.contextpath}" />
 				<arg value="${runwar.port}" />
@@ -94,8 +95,8 @@
 		<echoproperties prefix="runwar"/>
 		<echo message="starting jetty"/>
 		<sequential>
-			<echoproperties prefix="runwar"/>
-			<java classname="runwar.Start" classpathref="build.lib.path" fork="true" spawn="true">
+			<!-- <echoproperties prefix="runwar"/> -->
+			<java classname="runwar.Start" classpathref="build.lib.path" fork="true" spawn="true" maxmemory="${runwar.maxmemory}">
 				<arg value="${runwar.war.path}" />
 				<arg value="${runwar.war.contextpath}" />
 				<arg value="${runwar.port}" />

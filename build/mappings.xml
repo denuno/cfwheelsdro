@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <mappings>
   <mapping physical="/Users/denny/programs/eclipse/workspace/cfwheelsdro/src/cfwheels" virtual="/cfwheels"/>
-  <mapping physical="/Users/denny/programs/eclipse/workspace/cfwheelsdro/src/cfwheelsdro" virtual="/cfwheelsdro"/>
 <mapping physical="/Users/denny/programs/eclipse/workspace/cfwheelsdro/build/../test" virtual="/test"/>
 <mapping physical="/Users/denny/programs/eclipse/workspace/cfwheelsdro/build/../pub" virtual="/pub"/>
 </mappings>

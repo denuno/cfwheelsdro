@@ -28,9 +28,17 @@
 			  </catch>
 
 			  <finally>
+			  	<!--
+			  	<cfmail to="valliantster@gmail.com" from="valliantster@gmail.com" subject="fart" message="it is good for the heart"/>
+			  	-->
 			  </finally>
 			</antcontrib:trycatch>
 		</sequential>
+	</target>
+	
+	<target name="cfmail.test">
+		<property name="build.type" value="localdev"/>
+	  	<cfmail to="valliantster@gmail.com" from="valliantster@gmail.com" subject="fart" message="it is good for the heart"/>
 	</target>
 
 	<target name="tests.start.run">

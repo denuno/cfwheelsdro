@@ -87,7 +87,7 @@
 	<property name="log.dir" value="${temp.dir}/logs" />
 
 	<property name="runwar.war.path" location="${war.temp.dir}" />
-	<property name="runwar.war.contextpath" value="/${war.name}" />
+	<property name="runwar.war.contextpath" value="${war.contextpath}" />
 	<property name="runwar.port" value="8080" />
 	<property name="runwar.stop.socket" value="8971" />
 
@@ -114,6 +114,7 @@
 	<import file="startscripts.xml" />
 	<import file="mappings-filter.xml" />
 	<import file="fileservlet.xml" />
+	<import file="io-data.xml" />
 	<!--
 		<typedef name="numgt" classpath="${ext.dir}/ant-lib/den.ant.conditions.jar" classname="den.ant.conditions.NumGreaterThan" />
 		<target name="checkResinVersion">
@@ -271,22 +272,6 @@
 		</antcontrib:for>
 	</target>
 
-	<macrodef name="load-src-xml">
-		<sequential>
-			<antcontrib:runtarget target="check.creds" />
-			<loadfile property="src.xml" srcFile="src.xml">
-				<filterchain>
-					<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
-						<param type="propertiesfile" value="creds.txt" />
-					</filterreader>
-				</filterchain>
-			</loadfile>
-			<xmltask destbuffer="src.buff" outputter="simple">
-				<insert path="/" xml="${src.xml}" position="under" />
-			</xmltask>
-		</sequential>
-	</macrodef>
-
 	<macrodef name="addlibs">
 		<attribute name="from" />
 		<sequential>
@@ -314,17 +299,17 @@
   					]]>
 				</insert>
 				<!-- if some mappings exist we can update and add -->
-							<copy path="/mappings/mapping[@virtual='@{virtual}']/@virtual" attrValue="true" property="mapping.exists" />
-							<replace path="/mappings/mapping[@virtual=@{virtual}]/text()" if="mapping.exists">
-								<![CDATA[
-			  						<mapping physical="@{physical}" virtual="@{virtual}"/>
-			  					]]>
-			  					</replace>
-							<insert path="/mappings" position="under" unless="mapping.exists">
-								<![CDATA[
-			  						<mapping physical="@{physical}" virtual="@{virtual}"/>
-			  					]]>
-			  					</insert>
+				<copy path="/mappings/mapping[@virtual='@{virtual}']/@virtual" attrValue="true" property="mapping.exists" />
+				<replace path="/mappings/mapping[@virtual=@{virtual}]/text()" if="mapping.exists">
+					<![CDATA[
+  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+  					]]>
+  					</replace>
+				<insert path="/mappings" position="under" unless="mapping.exists">
+					<![CDATA[
+  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+  					]]>
+				</insert>
 			</xmltask>
 						<antcontrib:switch value="${mapping.exists}">
 							<case value="@{virtual}">
@@ -383,6 +368,37 @@
 		</sequential>
 	</macrodef>
 
+	<macrodef name="cfmail">
+		<attribute name="to"/>
+		<attribute name="from" />
+		<attribute name="replyto" default="@{from}" />
+		<attribute name="subject" default="" />
+		<attribute name="message" default="" />
+		<sequential>
+			<antcontrib:runtarget target="exists.mail.xml" />
+			<xmltask sourcebuffer="mail.buff">
+				<call path="mail/servers[1]">
+					<param name="smtp" path="@smtp" default="smtp.gmail.com" />
+					<param name="port" path="@port" default="587" />
+					<param name="username" path="@username" default="" />
+					<param name="password" path="@password" default="" />
+					<param name="ssl" path="@ssl" default="false" />
+					<param name="tls" path="@tls" default="true" />
+					<actions>
+						<mail mailhost="@{smtp}" 
+							mailport="@{port}" 
+							subject="@{subject}" 
+							password="@{password}" user="@{username}"
+							encoding="auto"
+							ssl="@{ssl}" from="@{from}" tolist="@{to}" replyto="@{replyto}"
+							message="Eat me">							
+						</mail>
+					</actions>
+				</call>
+			</xmltask>
+		</sequential>
+	</macrodef>
+
 	<target name="exists.mappings.xml">
 		<available file="${basedir}/mappings.xml" type="file" property="exists.mappings.xml" />
 		<antcontrib:if>
@@ -396,15 +412,54 @@
 		</antcontrib:if>
 	</target>
 
-	<target name="exists.datasources.xml">
+	<target name="exists.datasources.xml" depends="check.creds">
 		<available file="${basedir}/datasources.${build.type}.xml" type="file" property="exists.datasources.xml" />
 		<antcontrib:if>
 			<equals arg1="${exists.datasources.xml}" arg2="true" />
 			<then>
-				<echo message="Datasources file exists : ${basedir}/datasources.${build.type}.xml " />
+				<echo message="datasources settings file exists : ${basedir}/datasources.${build.type}.xml " />
+				<loadfile property="datasources.xml" srcFile="datasources.${build.type}.xml">
+					<filterchain>
+						<replacetokens>
+			                <token key="distro.name" value="${distro.name}"/>
+			                <token key="war.temp.dir" value="${war.temp.dir}"/>
+			            </replacetokens>
+						<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+							<param type="propertiesfile" value="creds.txt" />
+						</filterreader>
+					</filterchain>
+				</loadfile>
+				<xmltask destbuffer="datasources.buff" outputter="simple">
+					<insert path="/" xml="${datasources.xml}" position="under" />
+				</xmltask>
 			</then>
 			<else>
-				<echo message="No datasources file to import : ${basedir}/datasources.${build.type}.xml does not exist." />
+				<antcontrib:var name="exists.datasources.xml" unset="true" />
+				<available file="${basedir}/datasources.xml" type="file" property="exists.datasources.xml" />
+				<antcontrib:if>
+					<equals arg1="${exists.datasources.xml}" arg2="true" />
+					<then>
+						<echo message="datasources settings file exists : ${basedir}/datasources.xml " />
+						<loadfile property="datasources.xml" srcFile="datasources.xml">
+							<filterchain>
+								<replacetokens>
+					                <token key="distro.name" value="${distro.name}"/>
+					                <token key="war.temp.dir" value="${war.temp.dir}"/>
+					            </replacetokens>
+								<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+									<param type="propertiesfile" value="creds.txt" />
+								</filterreader>
+							</filterchain>
+						</loadfile>
+						<xmltask destbuffer="datasources.buff" outputter="simple">
+							<insert path="/" xml="${datasources.xml}" position="under" />
+						</xmltask>
+					</then>
+					<else>
+						<echo message="No build datasources settings file to import : ${basedir}/datasources.${build.type}.xml does not exist." />
+						<echo message="No datasources settings file to import : ${basedir}/datasources.xml does not exist." />
+					</else>
+				</antcontrib:if>
 			</else>
 		</antcontrib:if>
 	</target>

@@ -1,9 +1,24 @@
 <project name="build-obd" default="obd.war.build" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
-	<property name="ext.obd.dir" location="${ext.dir}/openbd/1.2" />
+	<property name="ext.obd.version" value="1.3" />
+	<property name="ext.obd.dir" location="${ext.dir}/openbd/${ext.obd.version}" />
 	<property name="ext.obd.war" location="${ext.obd.dir}/openbd.war" />
+	<property name="ext.obd.war.uri" value="http://www.openbluedragon.org/download/${ext.obd.version}/openbd.war" />
+		
+	<target name="obd.requires">
+		<mkdir dir="${ext.obd.dir}"/>
+		<antcontrib:if>
+			<available file="${ext.obd.war}" />
+			<then/>
+			<else>
+				<get src="${ext.obd.war.uri}" dest="${ext.obd.war}" verbose="true" ignoreerrors="false" />
+			</else>
+		</antcontrib:if>
+		<requires-ext-file file="${ext.dir}/jboss/jboss-classloading.xml"/>
+	</target>
+
 	
-	<target name="obd.build" depends="clean">
+	<target name="obd.build" depends="clean,obd.requires">
 		<unzip src="${ext.obd.war}"
 		       dest="${war.temp.dir}">
 		</unzip>
@@ -21,7 +36,7 @@
 	</target>	
 
 	<target name="obd.build.war.localdev" depends="obd.war.build">
-		<copy file="${ext.obd.dir}/error.cfm" todir="${war.temp.dir}/WEB-INF/lib/obd-server/context/library/tag" overwrite="true" />
+		<!-- <copy file="${ext.obd.dir}/error.cfm" todir="${war.temp.dir}/WEB-INF/lib/obd-server/context/library/tag" overwrite="true" />-->
 		<xmltask source="${war.temp.dir}/WEB-INF/bluedragon/bluedragon.xml" dest="${war.temp.dir}/WEB-INF/bluedragon/bluedragon.xml">
 			<attr path="/obd-configuration/java" attr="inspect-template" value="always"/>
 		</xmltask>
@@ -153,7 +168,7 @@
 			]]>
 			</insert>
 		</xmltask>
-	   <xmltask source="datasources.${build.type}.xml">
+	   <xmltask sourcebuffer="datasources.buff">
 	      <call path="datasources/*">
 	        <param name="name" path="@name" default="datasource"/>
 	        <param name="blob" path="@blob" default="false"/>
