@@ -4,6 +4,17 @@
 	<import file="scm-svn.xml"/>
 	<import file="scm-cvs.xml"/>
 
+	<macrodef name="apply-patch">
+		<attribute name="patchUrl"/>
+		<attribute name="patchlevel" default="0" />
+		<attribute name="patchdir" default="${src.dir}" />
+		<sequential>
+			<delete file="${temp.dir.absolute}/patch.txt"/>
+			<get src="@{patchUrl}" dest="${temp.dir.absolute}/patch.txt" verbose="true" ignoreerrors="false" />
+			<patch patchfile="${temp.dir.absolute}/patch.txt" strip="@{patchlevel}" dir="@{patchdir}"/>
+			<echo message="Patch results: ${patch.results}"/>
+		</sequential>
+	</macrodef>
 
 	<macrodef name="load-src-xml">
 		<sequential>
@@ -48,6 +59,7 @@
 			<else>
 				<echo message="Src dir : ${src.dir} ain't there, downloading" />
 				<mkdir dir="${src.dir}"/>
+				<antcontrib:runtarget target="project.update" />				
 				<antcontrib:runtarget target="src.import" />				
 			</else>
 		</antcontrib:if>

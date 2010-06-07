@@ -84,6 +84,7 @@
 	<property name="ext.acf.dir" location="${ext.dir}/acf" />
 	<property name="ext.acf.war" location="${ext.acf.dir}/9/cfusion.war" />
 	<property name="temp.dir" location="./temp" />
+	<property name="temp.dir.absolute" location="${temp.dir}" />
 	<property name="log.dir" value="${temp.dir}/logs" />
 
 	<property name="runwar.war.path" location="${war.temp.dir}" />
@@ -311,14 +312,14 @@
   					]]>
 				</insert>
 			</xmltask>
-						<antcontrib:switch value="${mapping.exists}">
-							<case value="@{virtual}">
-								<echo message="Updated mappings.xml - @{virtual}	 @{physical}" />
-							</case>
-							<default>
-								<echo message="Added mappings.xml - @{virtual} 	@{physical}" />
-							</default>
-						</antcontrib:switch>
+			<antcontrib:switch value="${mapping.exists}">
+				<case value="@{virtual}">
+					<echo message="Updated mappings.xml - @{virtual}	 @{physical}" />
+				</case>
+				<default>
+					<echo message="Added mappings.xml - @{virtual} 	@{physical}" />
+				</default>
+			</antcontrib:switch>
 		</sequential>
 	</macrodef>
 

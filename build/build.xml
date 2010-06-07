@@ -6,7 +6,7 @@
 	<import file="${basedir}/../../cfdistro/src/cfdistro/build.xml" />
 	 -->
 
-	<target name="build.localdev" depends="src.to.mappings.xml">
+	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir">
 		<!-- add mappings -->
 		<!--
 		<mapping physical="${basedir}/../../docs" virtual="/docs"/>
@@ -52,9 +52,13 @@
 -->
 		<urlrewriteout name="rootToContextPath" from="/(.*)" to="%{context-path}/$1" type="forward"/>
 		<antcontrib:if>
-			<equals arg1="${default.cfengine}" arg2="acf" />
+			<or>
+				<equals arg1="${default.cfengine}" arg2="acf" />
+				<equals arg1="${default.cfengine}" arg2="obd" />
+			</or>
 			<then>
-				<echo message="Running Adobe ColdFusion, copying files to web root" />
+				<echo message="This CFML Engine can't run from a mapping, copying files to war root.${line.separator}
+				Any 'live' development will have to be done to ${war.temp.dir}/cfwheels" />
 				<copy todir="${war.temp.dir}/cfwheels" verbose="false">
 					<fileset dir="${src.dir}/cfwheels" />
 				</copy>
@@ -68,10 +72,17 @@
 		</echo>
 		<echo file="${war.temp.dir}/index.cfm"><![CDATA[<cfinclude template="/cfwheels/wheels/index.cfm" />]]>
 		</echo>
+	</target>
+
+	<target name="run.tests" depends="build.localdev">
+		<!--
+		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
+		-->
+		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>		
 		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
+		<antcontrib:runtarget target="tests.start.run.stop" />
 	</target>	
 
-	<!-- these are just here for the Eclipse Ant UI ordering -->
 	<target name="data.import">
 		<!--
 		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
@@ -79,7 +90,6 @@
 		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
 	</target>	
 
-	<!-- these are just here for the Eclipse Ant UI ordering -->
 	<target name="data.export">
 		<!--
 		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
@@ -87,6 +97,7 @@
 		<export-dsn dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
 	</target>	
 
+	<!-- these are just here for the Eclipse Ant UI ordering -->
 	<target name="build.localdev.start.launch">
 		<antcontrib:runtarget target="cfdistro.build.localdev.start.launch" />
 	</target>	
