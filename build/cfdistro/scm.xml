@@ -1,0 +1,65 @@
+<project name="revisions" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<import file="scm-git.xml"/>
+	<import file="scm-svn.xml"/>
+	<import file="scm-cvs.xml"/>
+
+	<target name="exists.src.xml">
+		<available file="${basedir}/src.xml" type="file"
+		           property="exists.src.xml"/>
+		<antcontrib:if>
+			<equals arg1="${exists.src.xml}" arg2="true" />
+			<then>
+				<echo message="src file exists : ${basedir}/src.xml " />
+				<load-src-xml />
+			</then>
+			<else>
+				<echo message="No src file to import : ${basedir}/src.xml does not exist." />
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="exists.src.dir" depends="exists.src.xml" if="exists.src.xml">
+		<available file="${src.dir}" type="dir" property="exists.src.dir" />
+		<antcontrib:if>
+			<equals arg1="${exists.src.dir}" arg2="true" />
+			<then>
+				<echo message="Src dir : ${src.dir} " />
+			</then>
+			<else>
+				<echo message="Src dir : ${src.dir} ain't there, downloading" />
+				<mkdir dir="${src.dir}"/>
+				<antcontrib:runtarget target="src.import" />				
+			</else>
+		</antcontrib:if>
+	</target>
+	
+	<target name="src.import" depends="exists.src.xml" if="exists.src.xml">
+		<antcontrib:runtarget target="src.import.svn" />
+		<antcontrib:runtarget target="src.import.git" />
+		<antcontrib:runtarget target="src.import.cvs" />
+	</target>
+	
+	<target name="check.project.for.newrevision" depends="get.project.src.type" unless="revisions.are.same" if="exists.src.xml">
+		<antcontrib:runtarget target="check.project.for.newrevision.${project.src.type}" />
+	</target>
+
+	<target name="project.update" depends="check.project.for.newrevision" unless="revisions.are.same" if="exists.src.xml">
+		<antcontrib:runtarget target="project.update.${project.src.type}" />
+	</target>
+
+	<target name="get.project.src.type" depends="exists.src.xml" if="exists.src.xml">
+		<xmltask sourcebuffer="src.buff">
+			<call path="src/project/*">
+		        <param name="dest" path="@dest" default="NONE"/>
+		        <param name="type" path="@type" default="NONE"/>
+		        <param name="uri" path="@uri" default="NONE"/>
+		        <actions>
+		        	<property name="project.src.type" value="@{type}" />
+		    		<echo message="Project src type : ${project.src.type}"/>
+		        </actions>
+			</call>  
+		</xmltask>  	
+	</target>
+
+</project>

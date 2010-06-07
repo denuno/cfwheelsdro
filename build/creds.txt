@@ -1,0 +1,5 @@
+# credentials token values: do not commit this file.  ignore if possible
+gmail.user=someone@gmail.com
+gmail.password=somepassword
+dsn.wheelstestdb.username=sa
+dsn.wheelstestdb.password=

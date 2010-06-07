@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<database xmlns="http://db.apache.org/ddlutils/schema/1.1" name="wheelstestdb">
+  <table name="Authors" description="">
+    <column name="id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="firstname" primaryKey="false" required="true" type="VARCHAR" size="100" autoIncrement="false" />
+    <column name="lastname" primaryKey="false" required="true" type="VARCHAR" size="100" autoIncrement="false" />
+  </table>
+  <table name="Cities" description="">
+    <column name="CountyId" primaryKey="false" required="true" type="CHAR" size="4" autoIncrement="false" />
+    <column name="CityCode" primaryKey="true" required="true" type="TINYINT" size="3" autoIncrement="false" />
+    <column name="Name" primaryKey="false" required="true" type="VARCHAR" size="50" autoIncrement="false" />
+  </table>
+  <table name="Classifications" description="">
+    <column name="id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="postid" primaryKey="false" required="true" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="tagid" primaryKey="false" required="true" type="INTEGER" size="10" autoIncrement="false" />
+  </table>
+  <table name="Comments" description="">
+    <column name="id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="postid" primaryKey="false" required="true" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="body" primaryKey="false" required="true" type="LONGVARCHAR" size="65535" autoIncrement="false" />
+    <column name="name" primaryKey="false" required="true" type="VARCHAR" size="100" autoIncrement="false" />
+    <column name="url" primaryKey="false" required="false" type="VARCHAR" size="100" autoIncrement="false" />
+    <column name="email" primaryKey="false" required="false" type="VARCHAR" size="100" autoIncrement="false" />
+    <column name="createdat" primaryKey="false" required="true" type="TIMESTAMP" size="19" autoIncrement="false" />
+  </table>
+  <table name="PhotoGalleries" description="">
+    <column name="photogalleryid" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="userid" primaryKey="false" required="true" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="title" primaryKey="false" required="true" type="VARCHAR" size="255" autoIncrement="false" />
+    <column name="description" primaryKey="false" required="true" type="LONGVARCHAR" size="65535" autoIncrement="false" />
+  </table>
+  <table name="PhotoGalleryPhotos" description="">
+    <column name="photogalleryphotoid" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="photogalleryid" primaryKey="false" required="true" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="filename" primaryKey="false" required="true" type="VARCHAR" size="255" autoIncrement="false" />
+    <column name="description" primaryKey="false" required="true" type="VARCHAR" size="255" autoIncrement="false" />
+  </table>
+  <table name="Posts" description="">
+    <column name="id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="authorid" primaryKey="false" required="false" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="title" primaryKey="false" required="true" type="VARCHAR" size="250" autoIncrement="false" />
+    <column name="body" primaryKey="false" required="true" type="LONGVARCHAR" size="65535" autoIncrement="false" />
+    <column name="createdat" primaryKey="false" required="true" type="TIMESTAMP" size="19" autoIncrement="false" />
+    <column name="updatedat" primaryKey="false" required="false" type="TIMESTAMP" size="19" autoIncrement="false" />
+    <column name="views" primaryKey="false" required="true" type="INTEGER" size="10" default="0" autoIncrement="false" />
+    <column name="averagerating" primaryKey="false" required="false" type="REAL" size="12" autoIncrement="false" />
+  </table>
+  <table name="Profiles" description="">
+    <column name="id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="authorid" primaryKey="false" required="false" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="dateofbirth" primaryKey="false" required="true" type="TIMESTAMP" size="19" autoIncrement="false" />
+    <column name="bio" primaryKey="false" required="false" type="LONGVARCHAR" size="65535" autoIncrement="false" />
+  </table>
+  <table name="Shops" description="">
+    <column name="ShopId" primaryKey="true" required="true" type="CHAR" size="9" autoIncrement="false" />
+    <column name="CityCode" primaryKey="false" required="false" type="TINYINT" size="3" autoIncrement="false" />
+    <column name="Name" primaryKey="false" required="true" type="VARCHAR" size="80" autoIncrement="false" />
+  </table>
+  <table name="Tags" description="">
+    <column name="id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="name" primaryKey="false" required="true" type="VARCHAR" size="50" autoIncrement="false" />
+  </table>
+  <table name="Users" description="">
+    <column name="Id" primaryKey="true" required="true" type="INTEGER" size="10" autoIncrement="true" />
+    <column name="UserName" primaryKey="false" required="true" type="VARCHAR" size="50" autoIncrement="false" />
+    <column name="Password" primaryKey="false" required="true" type="VARCHAR" size="50" autoIncrement="false" />
+    <column name="FirstName" primaryKey="false" required="true" type="VARCHAR" size="50" autoIncrement="false" />
+    <column name="LastName" primaryKey="false" required="true" type="VARCHAR" size="50" autoIncrement="false" />
+    <column name="Address" primaryKey="false" required="false" type="VARCHAR" size="100" autoIncrement="false" />
+    <column name="City" primaryKey="false" required="false" type="VARCHAR" size="50" autoIncrement="false" />
+    <column name="State" primaryKey="false" required="false" type="CHAR" size="2" autoIncrement="false" />
+    <column name="ZipCode" primaryKey="false" required="false" type="VARCHAR" size="50" autoIncrement="false" />
+    <column name="Phone" primaryKey="false" required="false" type="VARCHAR" size="20" autoIncrement="false" />
+    <column name="Fax" primaryKey="false" required="false" type="VARCHAR" size="20" autoIncrement="false" />
+    <column name="BirthDay" primaryKey="false" required="false" type="TIMESTAMP" size="19" autoIncrement="false" />
+    <column name="BirthDayMonth" primaryKey="false" required="false" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="BirthDayYear" primaryKey="false" required="false" type="INTEGER" size="10" autoIncrement="false" />
+    <column name="BirthTime" primaryKey="false" required="false" type="TIMESTAMP" size="19" autoIncrement="false" />
+  </table>
+</database>

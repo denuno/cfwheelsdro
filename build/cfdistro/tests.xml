@@ -1,0 +1,106 @@
+<project name="tests" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	
+	<property name="tests.run.url" value="http://localhost:${runwar.port}/${war.name}/tests/run.cfm" />
+	<target name="tests.run">
+		<mkdir dir="${war.temp.dir}" />
+		<property name="testresult.file" value="${war.temp.dir}/test.results.html/" />
+		<sequential>
+			<echo message="running tests: ${tests.run.url}" />
+			<antcontrib:trycatch property="foo" reference="bar">
+			  <try>
+				<antcontrib:if>
+					<equals arg1="${default.cfengine}" arg2="acf" />
+					<then>
+						<echo message="Running ACF, sleeping for 21 secs" />
+						<sleep seconds="21" />
+					</then>
+				</antcontrib:if>
+				<get src="${tests.run.url}" dest="${testresult.file}" verbose="true" ignoreerrors="true" />
+				<loadfile property="tesresults" srcFile="${testresult.file}" />
+				<echo message="${tesresults}" />
+				<sleep seconds="10" />
+			    <echo>TEST RUN</echo>
+			  </try>
+
+			  <catch>
+			    <echo>TEST RUN FAIL!!!</echo>
+			  </catch>
+
+			  <finally>
+			  </finally>
+			</antcontrib:trycatch>
+		</sequential>
+	</target>
+
+	<target name="tests.start.run">
+		<mkdir dir="${war.temp.dir}" />
+		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />
+		<sequential>
+			<antcontrib:runtarget target="runwar.start.background" />
+			<antcontrib:runtarget target="tests.run" />
+		</sequential>
+	</target>
+
+	<target name="tests.start.run.stop">
+		<mkdir dir="${war.temp.dir}" />
+		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />
+		<sequential>
+			<antcontrib:runtarget target="tests.start.run" />
+			<antcontrib:runtarget target="runwar.stop" />
+		</sequential>
+	</target>
+	
+	
+	<target name="tests.build.start.run.stop">
+		<mkdir dir="${war.temp.dir}" />
+		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />
+		<sequential>
+			<antcontrib:runtarget target="project.update" />
+			<antcontrib:runtarget target="build.localdev.start" />
+			<antcontrib:runtarget target="tests.run" />
+			<antcontrib:runtarget target="runwar.stop" />
+		</sequential>
+	</target>
+
+	<target name="tests.build.start.run.stop.both">
+		<sequential>
+			<antcontrib:var name="default.cfengine" value="railo" />
+			<antcall target="tests.build.start.run.stop" />
+			<antcontrib:var name="default.cfengine" value="acf" />
+			<antcall target="tests.build.start.run.stop" />
+		</sequential>
+	</target>
+
+	<target name="tests.build.start.run.stop.all">
+		<sequential>
+			<antcontrib:var name="default.cfengine" value="railo" />
+			<antcall target="tests.build.start.run.stop" />
+			<antcontrib:var name="default.cfengine" value="acf" />
+			<antcall target="tests.build.start.run.stop" />
+			<antcontrib:var name="default.cfengine" value="obd" />
+			<antcall target="tests.build.start.run.stop" />
+		</sequential>
+	</target>
+
+	<target name="tests.build.start.run.stop.ifnew">
+		<mkdir dir="${war.temp.dir}" />
+		<property name="testresult.file" value="${war.temp.dir}/test.results.html/" />
+		<sequential>
+			<antcontrib:runtarget target="project.update" />
+			<antcontrib:if>
+				<equals arg1="${revisions.are.same}" arg2="true" />
+				<then>
+					<echo message="Revisions are the same, not running tests" />
+				</then>
+				<else>
+					<echo message="Revisions differ, running tests" />
+					<sequential>
+						<antcontrib:runtarget target="build.localdev" />
+						<antcontrib:runtarget target="tests.build.start.run.stop" />
+					</sequential>
+				</else>
+			</antcontrib:if>
+		</sequential>
+	</target>
+</project>

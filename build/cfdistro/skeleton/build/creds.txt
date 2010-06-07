@@ -1,0 +1,3 @@
+# credentials token values: do not commit this file.  ignore if possible
+gmail.user=someuser
+gmail.password=somepassword

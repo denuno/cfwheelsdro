@@ -1,0 +1,594 @@
+<project name="cfdistro" default="build.localdev" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<dirname property="cfdistro.basedir" file="${ant.file.cfdistro}" />
+
+	<path id="build.lib.path">
+		<fileset dir="${cfdistro.basedir}/lib">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<macrodef name="javaSlashes">
+		<attribute name="property" />
+		<attribute name="input" />
+		<sequential>
+			<antcontrib:propertyregex property="@{property}" input="@{input}" regexp="[\\|/]" replace="/" global="true"  override="yes" />
+		</sequential>
+	</macrodef>
+
+	<macrodef name="requires-ext-file">
+		<attribute name="file" />
+		<sequential>
+			<javaSlashes property="extfile" input="@{file}" />
+			<echo message="getting ${extfile}" />
+			<antcontrib:propertyregex override="yes" property="extdir" input="${extfile}" regexp=".*/ext/(.+)/([^/]+)$" select="\1" />
+			<antcontrib:propertyregex override="yes" property="extfile" input="${extfile}" regexp=".*/ext/(.*)" select="\1" />
+			<antcontrib:if>
+				<available file="${ext.dir}/${extfile}" />
+				<then />
+				<else>
+					<echo message="getting ${extfile}" />
+					<mkdir dir="${ext.dir}/${extdir}" />
+					<get src="${ext.uri}/${extfile}" dest="${ext.dir}/${extfile}" verbose="true" ignoreerrors="false" />
+				</else>
+			</antcontrib:if>
+		</sequential>
+	</macrodef>
+
+	<import file="scm.xml" />
+
+	<macrodef name="requires-ext">
+		<attribute name="resource" />
+		<sequential>
+			<javaSlashes property="fixedSlashes" input="@{resource}" />
+			<antcontrib:propertyregex override="yes" property="extfile" input="${fixedSlashes}" regexp=".*/ext/(.*)" select="\1" />
+			<antcontrib:if>
+				<available file="${ext.dir}/${extfile}" />
+				<then />
+				<else>
+					<echo message="getting ${extfile}" />
+					<svn-export dest="${ext.dir}/${extfile}" uri="${ext.uri}/${extfile}" />
+				</else>
+			</antcontrib:if>
+		</sequential>
+	</macrodef>
+
+
+	<taskdef uri="antlib:net.sf.antcontrib" resource="net/sf/antcontrib/antlib.xml" classpath="${cfdistro.basedir}/lib/ant-contrib.jar" />
+
+	<taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask" classpath="${cfdistro.basedir}/lib/xmltask-v1.16.1.jar" />
+	<!--
+		<taskdef name="mxunittask" classname="org.mxunit.ant.MXUnitAntTask" classpath="lib/mxunit-ant.jar" />
+		-->
+
+	<property name="distro.name" value="cfdistro" />
+	<property name="default.cfengine" value="railo" />
+	<property name="src.dir" location="../src" />
+	<property name="dist.dir" location="./dist" />
+	<property name="pub.dir" location="../pub" />
+	<property name="docs.dir" location="../docs" />
+	<property name="tests.dir" location="../tests" />
+	<property name="conf.dir" location="../conf" />
+	<property name="temp.dir" location="./temp" />
+	<property name="log.dir" location="${temp.dir}" />
+
+	<property name="war.name" value="${distro.name}" />
+	<property name="war.contextpath" value="/${war.name}" />
+	<property name="war.temp.dir" value="${temp.dir}/${war.name}.war" />
+	<property name="cfadmin.password" value="testtest" />
+
+	<property name="railo.archive.dir" location="${dist.dir}/ra" />
+	<property name="ext.dir" location="${cfdistro.basedir}/ext" />
+	<property name="ext.railo.dir" location="${ext.dir}/railo/3.1" />
+	<property name="ext.railo.war.dir" location="${ext.railo.dir}/railo.war" />
+	<property name="ext.acf.dir" location="${ext.dir}/acf" />
+	<property name="ext.acf.war" location="${ext.acf.dir}/9/cfusion.war" />
+	<property name="temp.dir" location="./temp" />
+	<property name="log.dir" value="${temp.dir}/logs" />
+
+	<property name="runwar.war.path" location="${war.temp.dir}" />
+	<property name="runwar.war.contextpath" value="/${war.name}" />
+	<property name="runwar.port" value="8080" />
+	<property name="runwar.stop.socket" value="8971" />
+
+	<property name="jetty-runner.jar" value="jetty-runner-7.1.0.v20100505.jar" />
+
+	<property name="ext.uri" value="http://subversion.assembla.com/svn/cfdistro/trunk/cfdistro/ext" />
+
+	<requires-ext resource="${ext.dir}/dtd/web-app_2_3.dtd" />
+	<requires-ext resource="${ext.dir}/dtd/urlrewrite3.2.dtd" />
+	<xmlcatalog id="commonDTDs">
+		<dtd publicId="-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" location="${ext.dir}/dtd/web-app_2_3.dtd" />
+		<dtd publicId="-//tuckey.org//DTD UrlRewrite 3.2//EN" location="${ext.dir}/dtd/urlrewrite3.2.dtd" />
+	</xmlcatalog>
+	<javaSlashes property="ext.dir" input="${ext.dir}" />
+
+	<import file="build-railo.xml" />
+	<import file="build-acf.xml" />
+	<import file="build-obd.xml" />
+	<import file="java/runwar/build.xml" />
+	<import file="sshtunnel.xml" />
+	<import file="urlrewritefilter.xml" />
+	<import file="servlet-mappings.xml" />
+	<import file="tests.xml" />
+	<import file="startscripts.xml" />
+	<import file="mappings-filter.xml" />
+	<import file="fileservlet.xml" />
+	<!--
+		<typedef name="numgt" classpath="${ext.dir}/ant-lib/den.ant.conditions.jar" classname="den.ant.conditions.NumGreaterThan" />
+		<target name="checkResinVersion">
+				<condition property="resin4">
+					<not>
+						<numgt arg1="${resin.version}" arg2="4" />
+					</not>
+				</condition>
+			<echo message="valueA is greater than valueB" />
+		</target>
+		-->
+	<target name="clean">
+		<delete dir="${temp.dir}" />
+		<delete dir="${dist.dir}" />
+		<delete dir="${basedir}/WEB-INF/lib/railo-server/context" />
+		<delete dir="${basedir}/WEB-INF/railo" />
+		<delete dir="${basedir}/WEB-INF/flex" />
+	</target>
+
+	<target name="jar.war">
+		<delete file="${basedir}/dist/${war.name}.war" />
+		<jar jarfile="${basedir}/dist/${war.name}.war" basedir="${war.temp.dir}" />
+	</target>
+
+	<target name="copy.temp.to.dist">
+		<copy todir="${dist.dir}/" verbose="true">
+			<fileset dir="${temp.dir}/" includes="**" />
+		</copy>
+	</target>
+
+	<target name="copy.cfdistro.dist" depends="clean">
+		<echo message="${cfdistro.target.build.dir}" />
+		<copy todir="${cfdistro.target.build.dir}/cfdistro" verbose="true">
+			<fileset dir="${cfdistro.basedir}/" includes="*.*" />
+			<fileset dir="${cfdistro.basedir}/" includes="lib/**,ext/railo/3.1/**,ext/jboss/**,ext/urlrewritefilter/**,org/**,runwar/**,java/**" />
+		</copy>
+	</target>
+
+	<target name="cfdistro.skeleton" >
+		<property name="prop.message" value="is required! ${line.separator} Example: ant -Dtarget.dir=/var/www/superdistro -Ddistro.name=superdistro cfdistro.skeleton"/>
+        <fail message="target.dir ${prop.message}" unless="target.dir"/>
+        <fail message="distro.name ${prop.message}" unless="distro.name"/>
+		<echo message="creating distro build: ${distro.name} ${target.dir}" />
+		<mkdir dir="${target.dir}" />
+		<echo file="${target.dir}/.project"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+			<projectDescription>
+				<name>${distro.name}</name>
+				<comment>
+				</comment>
+				<projects>
+				</projects>
+				<buildSpec>
+				</buildSpec>
+				<natures>
+				</natures>
+			</projectDescription>
+			]]>
+		</echo>
+		<xmltask source="${target.dir}/.project" dest="${target.dir}/.project" outputter="simple" />
+		<copy todir="${target.dir}/build/cfdistro" verbose="false">
+			<fileset dir="${cfdistro.basedir}/" includes="*.*" />
+			<fileset dir="${cfdistro.basedir}/" includes="lib/**,ext/railo/3.1/**,ext/jboss/**,ext/urlrewritefilter/**,org/**,runwar/**,java/**" />
+		</copy>
+		<property name="skeleton.dir" value="${cfdistro.basedir}/skeleton"/>
+		<copy todir="${target.dir}" verbose="false">
+			<filterchain>
+				<replacetokens>
+	                <token key="distro.name" value="${distro.name}"/>
+	            </replacetokens>
+			    <!-- <filterreader classname="org.apache.tools.ant.filters.ExpandProperties"/> -->
+			</filterchain>
+			<fileset dir="${skeleton.dir}" includes="**" />
+		</copy>
+		<!--<mkdir dir="${target.dir}/src/${distro.name}" />-->
+		<move file="${target.dir}/build/build.xml.txt" tofile="${target.dir}/build/build.xml"/>
+	</target>
+
+	<target name="build.localdev" depends="clean">
+		<property name="build.type" value="localdev" />
+		<antcontrib:runtarget target="${default.cfengine}.build.war.${build.type}" />
+		<!-- <antcontrib:runtarget target="servlet.fileservlet.install" /> -->
+		<antcontrib:runtarget target="servlet.mappings.update" />
+		<antcontrib:runtarget target="startscripts.create" />
+	</target>
+
+	<target name="build.localdev.start.launch" depends="build.localdev">
+		<sequential>
+			<antcontrib:runtarget target="runwar.start" />
+			<antcontrib:runtarget target="runwar.openUrl" />
+		</sequential>
+	</target>
+
+	<target name="build.dev">
+		<property name="build.type" value="dev" />
+		<antcontrib:runtarget target="${default.cfengine}.build.war.src" />
+	</target>
+
+	<target name="build.qa">
+		<property name="build.type" value="qa" />
+		<antcontrib:runtarget target="${default.cfengine}.build.war.${build.type}" />
+	</target>
+
+	<target name="build.prod">
+		<property name="build.type" value="prod" />
+		<antcontrib:runtarget target="${default.cfengine}.build.war.${build.type}" />
+	</target>
+
+	<target name="build.war.src">
+		<property name="build.type" value="prod" />
+		<antcontrib:runtarget target="${default.cfengine}.build.war.src" />
+	</target>
+
+	<target name="build.war.runner">
+		<copy file="./lib/${jetty-runner.jar}" tofile="${basedir}/dist/${war.name}-runner.jar" overwrite="true" />
+		<javac srcdir="${runwar.basedir}/src/runwar" includes="RunEmbeddedWar.java" destdir="${basedir}/dist/" classpathref="build.lib.path" />
+		<echo file="${basedir}/dist/runwar.properties" message="war.name=${war.name}" />
+		<jar jarfile="${basedir}/dist/${war.name}-runner.jar" basedir="${basedir}/dist/" excludes="*.jar,*.ra" update="true">
+			<manifest>
+				<attribute name="Main-Class" value="runwar.RunEmbeddedWar" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="start">
+		<exec executable="${basedir}/start.sh" spawn="true" />
+	</target>
+
+	<target name="start-clean" depends="railo.war.build">
+		<exec executable="${basedir}/start.sh" spawn="true">
+		</exec>
+	</target>
+
+	<target name="src.to.mappings.xml" depends="exists.src.dir">
+		<echo file="mappings.xml" message="&lt;mappings&gt;&lt;/mappings&gt;" />
+		<antcontrib:for param="file">
+			<path>
+				<dirset dir="${src.dir}">
+					<include name="*" />
+				</dirset>
+			</path>
+			<sequential>
+				<antcontrib:propertyregex override="yes" property="mappingName" input="@{file}" regexp=".*/|.*\\([^\.]*)" replace="\1" />
+				<echo message="mappings.xml - Mapping: /${mappingName} - Physical: @{file}" />
+				<xmltask source="mappings.xml" dest="mappings.xml" outputter="simple">
+					<insert path="mappings" position="under">
+						<![CDATA[
+					<mapping 
+						virtual="/${mappingName}"
+						physical="@{file}"
+					/>
+					]]>
+					</insert>
+				</xmltask>
+			</sequential>
+		</antcontrib:for>
+	</target>
+
+	<macrodef name="load-src-xml">
+		<sequential>
+			<antcontrib:runtarget target="check.creds" />
+			<loadfile property="src.xml" srcFile="src.xml">
+				<filterchain>
+					<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+						<param type="propertiesfile" value="creds.txt" />
+					</filterreader>
+				</filterchain>
+			</loadfile>
+			<xmltask destbuffer="src.buff" outputter="simple">
+				<insert path="/" xml="${src.xml}" position="under" />
+			</xmltask>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="addlibs">
+		<attribute name="from" />
+		<sequential>
+			<echo message="Copying libs: @{from} to: ${war.temp.dir}/WEB-INF/lib" />
+			<copy todir="${war.temp.dir}/WEB-INF/lib" overwrite="true">
+				<fileset dir="@{from}" />
+			</copy>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="mapping">
+		<attribute name="physical" default="" />
+		<attribute name="virtual" />
+		<element name="args" optional="true" />
+		<sequential>
+			<antcontrib:var name="some.mapping.exists" unset="true" />
+			<antcontrib:var name="mapping.exists" unset="true" />
+			<xmltask source="mappings.xml" dest="mappings.xml">
+				<xmlcatalog refId="commonDTDs" />
+				<copy path="/mappings/text()" property="some.mapping.exists" />
+				<!-- if no mappings at all, just insert -->
+				<insert path="/mappings" position="under" unless="some.mapping.exists">
+					<![CDATA[
+  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+  					]]>
+				</insert>
+				<!-- if some mappings exist we can update and add -->
+							<copy path="/mappings/mapping[@virtual='@{virtual}']/@virtual" attrValue="true" property="mapping.exists" />
+							<replace path="/mappings/mapping[@virtual=@{virtual}]/text()" if="mapping.exists">
+								<![CDATA[
+			  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+			  					]]>
+			  					</replace>
+							<insert path="/mappings" position="under" unless="mapping.exists">
+								<![CDATA[
+			  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+			  					]]>
+			  					</insert>
+			</xmltask>
+						<antcontrib:switch value="${mapping.exists}">
+							<case value="@{virtual}">
+								<echo message="Updated mappings.xml - @{virtual}	 @{physical}" />
+							</case>
+							<default>
+								<echo message="Added mappings.xml - @{virtual} 	@{physical}" />
+							</default>
+						</antcontrib:switch>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="customtag">
+		<attribute name="physical" default="" />
+		<attribute name="virtual" default="" />
+		<element name="args" optional="true" />
+		<sequential>
+			<antcontrib:var name="some.mapping.exists" unset="true" />
+			<xmltask source="customtags.xml">
+				<xmlcatalog refId="commonDTDs" />
+				<copy path="/mappings/*" property="some.mapping.exists" />
+				<!-- if no mappings at all, just insert -->
+				<insert path="/mappings" position="under" unless="some.mapping.exists">
+					<![CDATA[
+  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+  					]]>
+				</insert>
+				<!-- if some mappings exist we can update and add -->
+				<call path="mappings/*">
+					<actions>
+						<antcontrib:var name="mapping.exists" unset="true" />
+						<xmltask source="customtags.xml" dest="customtags.xml" outputter="simple">
+							<copy path="/mappings/mapping[@virtual='@{virtual}']/@virtual" attrValue="true" property="mapping.exists" />
+							<replace path="/mappings/mapping[@virtual=@{virtual}]/text()" if="mapping.exists">
+								<![CDATA[
+			  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+			  					]]>
+			  					</replace>
+							<insert path="/mappings" position="under" unless="mapping.exists">
+								<![CDATA[
+			  						<mapping physical="@{physical}" virtual="@{virtual}"/>
+			  					]]>
+			  					</insert>
+						</xmltask>
+						<antcontrib:switch value="${mapping.exists}">
+							<case value="@{virtual}">
+								<echo message="Updated customtags.xml - @{virtual}	 @{physical}" />
+							</case>
+							<default>
+								<echo message="Added customtags.xml - @{virtual} 	@{physical}" />
+							</default>
+						</antcontrib:switch>
+					</actions>
+				</call>
+			</xmltask>
+		</sequential>
+	</macrodef>
+
+	<target name="exists.mappings.xml">
+		<available file="${basedir}/mappings.xml" type="file" property="exists.mappings.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.mappings.xml}" arg2="true" />
+			<then>
+				<echo message="Mapping file exists : ${basedir}/mappings.xml " />
+			</then>
+			<else>
+				<echo message="No mappings file to import : ${basedir}/mappings.xml does not exist.  ${line.separator} Run the 'src.to.mappings.xml' task to generate one from everything in ${src.dir}" />
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="exists.datasources.xml">
+		<available file="${basedir}/datasources.${build.type}.xml" type="file" property="exists.datasources.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.datasources.xml}" arg2="true" />
+			<then>
+				<echo message="Datasources file exists : ${basedir}/datasources.${build.type}.xml " />
+			</then>
+			<else>
+				<echo message="No datasources file to import : ${basedir}/datasources.${build.type}.xml does not exist." />
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="exists.customtags.xml">
+		<available file="${basedir}/customtags.xml" type="file" property="exists.customtags.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.customtags.xml}" arg2="true" />
+			<then>
+				<echo message="Custom tags file exists : ${basedir}/customtags.xml " />
+			</then>
+			<else>
+				<echo message="No customtags file to import : ${basedir}/customtags.xml does not exist." />
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="check.creds">
+		<antcontrib:if>
+			<available file="${basedir}/creds.txt" />
+			<then>
+			</then>
+			<else>
+				<echo file="${basedir}/creds.txt" message="# credentials token values: do not commit this file.  ignore if possible" />
+			</else>
+		</antcontrib:if>
+	</target>
+
+
+	<target name="exists.mail.xml" depends="check.creds">
+		<available file="${basedir}/mail.${build.type}.xml" type="file" property="exists.mail.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.mail.xml}" arg2="true" />
+			<then>
+				<echo message="mail settings file exists : ${basedir}/mail.${build.type}.xml " />
+				<loadfile property="mail.xml" srcFile="mail.${build.type}.xml">
+					<filterchain>
+						<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+							<param type="propertiesfile" value="creds.txt" />
+						</filterreader>
+					</filterchain>
+				</loadfile>
+				<xmltask destbuffer="mail.buff" outputter="simple">
+					<insert path="/" xml="${mail.xml}" position="under" />
+				</xmltask>
+			</then>
+			<else>
+				<antcontrib:var name="exists.mail.xml" unset="true" />
+				<available file="${basedir}/mail.xml" type="file" property="exists.mail.xml" />
+				<antcontrib:if>
+					<equals arg1="${exists.mail.xml}" arg2="true" />
+					<then>
+						<echo message="mail settings file exists : ${basedir}/mail.xml " />
+						<loadfile property="mail.xml" srcFile="mail.xml">
+							<filterchain>
+								<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
+									<param type="propertiesfile" value="creds.txt" />
+								</filterreader>
+							</filterchain>
+						</loadfile>
+						<xmltask destbuffer="mail.buff" outputter="simple">
+							<insert path="/" xml="${mail.xml}" position="under" />
+						</xmltask>
+					</then>
+					<else>
+						<echo message="No build mail settings file to import : ${basedir}/mail.${build.type}.xml does not exist." />
+						<echo message="No mail settings file to import : ${basedir}/mail.xml does not exist." />
+					</else>
+				</antcontrib:if>
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="exists.archives.xml">
+		<available file="${basedir}/railo.archives.${build.type}.xml" type="file" property="exists.archives.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.archives.xml}" arg2="true" />
+			<then>
+				<echo message="Archives file exists : ${basedir}/railo.archives.${build.type}.xml " />
+			</then>
+			<else>
+				<echo message="No archives.xml file to import : ${basedir}/railo.archives.${build.type}.xml does not exist.  Run the 'src.to.railo.archives.xml' task to generate one from everything in ${src.dir}" />
+			</else>
+		</antcontrib:if>
+	</target>
+
+	<target name="exists.scheduledtasks.xml">
+		<available file="${basedir}/scheduledtasks.xml" type="file" property="exists.scheduledtasks.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.scheduledtasks.xml}" arg2="true" />
+			<then>
+				<echo message="Scheduled tasks file exists : ${basedir}/scheduledtasks.xml " />
+			</then>
+			<else>
+				<echo message="No scheduled tasks file to import : ${basedir}/scheduledtasks.xml does not exist." />
+			</else>
+		</antcontrib:if>
+	</target>
+
+
+	<target name="compile-cf">
+		<mkdir dir="${war.temp.dir}" />
+		<sequential>
+			<antcall target="runwar.start.background" inheritAll="true" />
+			<antcontrib:for param="file">
+				<path>
+					<dirset dir="${src.dir}">
+						<include name="*" />
+					</dirset>
+				</path>
+				<sequential>
+					<antcontrib:propertyregex override="yes" property="mappingName" input="@{file}" regexp=".*/|.*\\([^\.]*)" replace="\1" />
+					<echo message="Compiling mapping - ${mappingName} - @{file}" />
+					<get src="http://localhost:8080/railo/build.cfc?method=compile-mapping&amp;mapping=${mappingName}" dest="${mappingName}.compile.results.properties" verbose="true" ignoreerrors="true" />
+					<copy todir="${war.temp.dir}" verbose="true">
+						<fileset dir="${basedir}/WEB-INF/railo/cfclasses/" />
+						<chainedmapper>
+							<regexpmapper from="^CF_.+_(${mappingName})\d{4}/+(.*)" to="\1/\2" />
+							<regexpmapper from="(.*)_cf(.).+\.class$$" to="\1.cf\2" />
+						</chainedmapper>
+					</copy>
+				</sequential>
+			</antcontrib:for>
+			<antcall target="runwar.stop" inheritAll="true" />
+		</sequential>
+	</target>
+
+	<target name="cfantrunner.install" if="cfantrunner.install">
+		<antcontrib:if>
+			<available file="${basedir}/customtags.xml" />
+			<then>
+			</then>
+			<else>
+				<echo file="${basedir}/customtags.xml">
+					<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+					<mappings>
+					</mappings>]]></echo>
+			</else>
+		</antcontrib:if>
+		<requires-ext resource="${ext.dir}/cfmltags/cfantrunner/" />
+		<requires-ext resource="${ext.dir}/cfmltags/cfantrunner-lib/" />
+		<customtag physical="${ext.dir}/cfmltags/cfantrunner" virtual="/cfantrunner" />
+		<addlibs from="${ext.dir}/cfmltags/cfantrunner-lib" />
+	</target>
+
+	<target name="expandResinToTempDir">
+		<unzip dest="${temp.dir}" src="${resin.install.zip}">
+			<patternset>
+				<exclude name="*MACOSX" />
+			</patternset>
+		</unzip>
+	</target>
+
+	<target name="copySources">
+		<mkdir dir="${war.temp.dir}/railotempdir" />
+		<copy todir="${war.temp.dir}">
+			<fileset dir="${src.dir}/">
+				<include name="**" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="cfdistro.update">
+		<property name="source-root" value="${cfdistro.basedir}" />
+		<property name="repository.URL" value="http://subversion.assembla.com/svn/cfdistro" />
+		<java classname="org.tmatesoft.svn.cli.SVN" dir="${source-root}/../" fork="true">
+			<arg value="export" />
+			<arg value="--force" />
+			<arg value="${repository.URL}/trunk/cfdistro/src/cfdistro" />
+			<classpath>
+				<pathelement location="${cfdistro.basedir}/lib/ganymed.jar" />
+				<pathelement location="${cfdistro.basedir}/lib/svnkit.jar" />
+				<pathelement location="${cfdistro.basedir}/lib/svnkit-cli.jar" />
+			</classpath>
+		</java>
+	</target>
+
+	<target name="cfdistro.dist" depends="clean">
+		<copy todir="${dist.dir}/cfdistro/build" verbose="false">
+			<fileset dir="${basedir}/" />
+		</copy>
+		<copy todir="${dist.dir}/cfdistro/build/cfdistro" verbose="false">
+			<fileset dir="${cfdistro.basedir}/" excludes="ext/**" />
+		</copy>
+	</target>
+
+</project>

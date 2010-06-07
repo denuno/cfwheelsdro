@@ -1,0 +1,151 @@
+<project name="runwar" default="runwar.compile" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+	<dirname property="runwar.basedir" file="${ant.file.runwar}" />
+
+	<path id="build.lib.path">
+		<fileset dir="${war.temp.dir}/WEB-INF/lib">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${cfdistro.basedir}/lib">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<property name="war.name" value="runwar" />
+	<property name="build.sysclasspath" value="last" />
+	
+	<property name="runwar.war.path" location="${runwar.basedir}/../" />
+	<property name="runwar.war.contextpath" value="/railo" />
+	<property name="runwar.port" value="8080" />
+	<property name="runwar.log.dir" value="${log.dir}/" />
+	<property name="runwar.stop.socket" value="8079" />
+	<property name="runwar.url" value="http://127.0.0.1:${runwar.port}${runwar.war.contextpath}/index.cfm" />
+
+	<target name="runwar.compile">
+		<delete dir="${runwar.basedir}/bin/runwar/"/>
+		<mkdir dir="${runwar.basedir}/bin/runwar/"/>
+		<javac srcdir="${runwar.basedir}/src/runwar" destdir="${runwar.basedir}/bin/runwar"
+    		classpathref="build.lib.path"/>
+	</target>
+
+	<target name="runwar.jar" depends="runwar.compile">
+		<jar destfile="${cfdistro.basedir}/lib/runwar.jar"
+         basedir="${runwar.basedir}/bin/runwar/" 
+         includes="**/*.class"
+         />
+		<delete dir="${runwar.basedir}/bin"/>
+	</target>
+
+	<target name="runembedded.jar" depends="runwar.compile">
+		<mkdir dir="${dist.dir}"/>
+		<echo file="${war.temp.dir}/../runwar.properties" message="war.name=${war.name}"/>
+		<jar destfile="${dist.dir}/${war.name}.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="runwar.RunEmbeddedWar" />
+				<attribute name="Class-Path" value="./${jetty-runner.jar}" />
+			</manifest>
+			<fileset dir="${cfdistro.basedir}/lib/" includes="${jetty-runner.jar}" />
+			<fileset dir="${war.temp.dir}/../" />
+			<fileset dir="${runwar.basedir}/bin/runwar" />
+		</jar>
+	</target>
+	
+	
+	<target name="if.toolong.echo" if="toolong">
+		<loadfile property="errlog"
+		      srcFile="${runwar.log.dir}/runner.log.txt"/>
+		<echo message="${errlog}" />
+	</target>
+
+	<target name="runwar.start" depends="runwar.jar">
+		<echoproperties prefix="runwar"/>
+		<echo message="starting jetty"/>
+		<sequential>
+			<java classname="runwar.Start" classpathref="build.lib.path" fork="true" spawn="true">
+				<arg value="${runwar.war.path}" />
+				<arg value="${runwar.war.contextpath}" />
+				<arg value="${runwar.port}" />
+				<arg value="${runwar.stop.socket}" />
+				<arg value="${runwar.log.dir}" />
+				<!--
+				<jvmarg value="-Djetty.logs=${runwar.log.dir}" />
+				<jvmarg value="-Dorg.eclipse.jetty.util.log.DEBUG=true" />
+				<jvmarg value="-Xdebug"/>
+				-->
+			</java>
+			<echo message="waiting for jetty"/>
+			<sleep seconds="3" />
+			<waitfor maxwait="21" maxwaitunit="second" checkevery="7" checkeveryunit="second" timeoutproperty="toolong">
+				<and>
+					<socket server="127.0.0.1" port="${runwar.port}" />
+					<!--
+					<http url="http://127.0.0.1:${runwar.port}/" />
+					<http url="http://127.0.0.1:${runwar.port}/${runwar.war.contextpath}/build.cfc" />
+					-->
+				</and>
+			</waitfor>
+			<antcontrib:runtarget target="if.toolong.echo" />
+			<echo message="waiting for railo"/>
+		</sequential>
+	</target>
+
+
+	<target name="runwar.start.background" depends="runwar.jar">
+		<echoproperties prefix="runwar"/>
+		<echo message="starting jetty"/>
+		<sequential>
+			<echoproperties prefix="runwar"/>
+			<java classname="runwar.Start" classpathref="build.lib.path" fork="true" spawn="true">
+				<arg value="${runwar.war.path}" />
+				<arg value="${runwar.war.contextpath}" />
+				<arg value="${runwar.port}" />
+				<arg value="${runwar.stop.socket}" />
+				<arg value="${runwar.log.dir}" />
+				<!--
+				<jvmarg value="-Djetty.logs=${runwar.log.dir}" />
+				<jvmarg value="-Dorg.eclipse.jetty.util.log.DEBUG=true" />
+				<jvmarg value="-Xdebug"/>
+				-->
+			</java>
+			<echo message="waiting for jetty"/>
+			<sleep seconds="3" />
+			<waitfor maxwait="21" maxwaitunit="second" checkevery="7" checkeveryunit="second" timeoutproperty="toolong">
+				<and>
+					<socket server="127.0.0.1" port="${runwar.port}" />
+					<!--
+					<http url="http://127.0.0.1:${runwar.port}/" />
+					<http url="http://127.0.0.1:${runwar.port}/${runwar.war.contextpath}/build.cfc" />
+					-->
+				</and>
+			</waitfor>
+			<antcontrib:runtarget target="if.toolong.echo" />
+			<echo message="waiting for railo"/>
+		</sequential>
+	</target>
+	
+	
+	<target name="runwar.stop">
+		<java classname="runwar.Stop" classpathref="build.lib.path">
+			<arg value="${runwar.stop.socket}" />
+		</java>
+	</target>
+
+	<target name="runwar.openUrl">
+		<java classname="runwar.BrowserOpener" classpathref="build.lib.path" failonerror="true" fork="true">
+			<arg value="${runwar.url}" />
+		</java>			
+	</target>
+	
+	
+	<target name="runwar.cycle">
+		<parallel>
+			<sequential>
+				<antcall target="runwar.start"/>
+				<sleep seconds="5" />
+				<antcall target="runwar.stop"/>
+			</sequential>
+		</parallel>
+	</target>
+
+
+</project>
