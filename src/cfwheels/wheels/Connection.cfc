@@ -33,7 +33,7 @@
 
 			if (loc.info.driver_name Contains "SQLServer" || loc.info.driver_name Contains "Microsoft SQL Server")
 				loc.adapterName = "MicrosoftSQLServer";
-			else if (loc.info.driver_name Contains "MySQL")
+			else if (loc.info.driver_name Contains "MySQL" || loc.info.driver_name Contains "H2 JDBC Driver")
 				loc.adapterName = "MySQL";
 			else if (loc.info.driver_name Contains "Oracle")
 				loc.adapterName = "Oracle";
