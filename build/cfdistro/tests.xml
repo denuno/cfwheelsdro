@@ -17,6 +17,7 @@
 					</then>
 				</antcontrib:if>
 				<get src="${tests.run.url}" dest="${testresult.file}" verbose="true" ignoreerrors="true" />
+			  	<property name="tests.results" value="pass" />
 				<loadfile property="tesresults" srcFile="${testresult.file}" />
 				<echo message="${tesresults}" />
 				<sleep seconds="10" />
@@ -24,7 +25,7 @@
 			  </try>
 
 			  <catch>
-			  	<property name="tests.run.failed" value="true" />
+			  	<property name="tests.results" value="fail" />
 			    <echo>TEST RUN FAIL!!!</echo>
 			  </catch>
 

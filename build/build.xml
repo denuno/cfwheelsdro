@@ -74,7 +74,7 @@
 		</echo>
 	</target>
 
-	<target name="run.tests" depends="build.localdev">
+	<target name="run.tests" >
 		<!--
 		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
 		-->
@@ -82,22 +82,23 @@
 		already applied to git cfwheelsdro
 		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>
 		-->		
+		
+		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
+		<antcontrib:runtarget target="tests.start.run.stop" />
 		<antcontrib:if>
-			<equals arg1="${tests.run.failed}" arg2="true" />
+			<equals arg1="${tests.results}" arg2="pass" />
 			<then>
-			</then>
-			<else>
 				<git command="push" dir="../">
 					<args>
 						<arg value="origin" />
 						<arg value="master" />
 					</args>
 				</git>
+			</then>
+			<else>
+				<echo message="tests failed, not pushing to origin master"/>
 			</else>
 		</antcontrib:if>
-		
-		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
-		<antcontrib:runtarget target="tests.start.run.stop" />
 	</target>	
 
 	<target name="data.import">
