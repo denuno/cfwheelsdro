@@ -1,9 +1,9 @@
 <project name="distro.build" default="build.localdev" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
 	<loadproperties srcfile="build.properties"/>
-	<import file="/workspace/cfdistro/src/cfdistro/build.xml" />
-	<!--
 	<import file="./cfdistro/build.xml"/>
+	<!--
+	<import file="/workspace/cfdistro/src/cfdistro/build.xml" />
 	 -->
 
 	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir">
