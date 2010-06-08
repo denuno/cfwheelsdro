@@ -13,7 +13,7 @@
 	<cffunction name="test_created_model_has_database_defaults">
 		<cftransaction action="begin">
 			<cfset loc.user = model("UserBlank").create(username="The Dude", password="doodle", firstName="The", lastName="Dude", defaults=false)>
-			<cftransaction action="rollback">
+			<cftransaction action="rollback" />
 		</cftransaction>
 		<cfset assert('StructKeyExists(loc.user, "birthTime") and TimeFormat(loc.user.birthTime, "HH:mm ss") eq "18:26 08"')>
 	</cffunction>
