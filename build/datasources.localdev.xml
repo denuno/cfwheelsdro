@@ -21,9 +21,9 @@
 		connectionretries="0"
 		connectionlimit="-1"
 		connectiontimeout="1"
-		custom="path=@war.temp.dir@/h2dbs/wheelstestdb;MODE=MYSQL"
+		custom=""
 		jdbc="h2"
-		jdbcstring="jdbc:h2:file:@war.temp.dir@/h2dbs/wheelstestdb;MODE=MYSQL "
+		jdbcstring="jdbc:h2:file:@war.temp.dir@/h2dbs/wheelstestdb;MODE=MYSQL"
 		 />
 -->
 

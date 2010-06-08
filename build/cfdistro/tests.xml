@@ -24,6 +24,7 @@
 			  </try>
 
 			  <catch>
+			  	<property name="tests.run.failed" value="true" />
 			    <echo>TEST RUN FAIL!!!</echo>
 			  </catch>
 

@@ -78,12 +78,30 @@
 		<!--
 		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
 		-->
-		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>		
+		<!--
+		already applied to git cfwheelsdro
+		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>
+		-->		
+		<antcontrib:if>
+			<equals arg1="${tests.run.failed}" arg2="true" />
+			<then>
+			</then>
+			<else>
+				<git command="push" dir="../">
+					<args>
+						<arg value="origin" />
+						<arg value="master" />
+					</args>
+				</git>
+			</else>
+		</antcontrib:if>
+		
 		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
 		<antcontrib:runtarget target="tests.start.run.stop" />
 	</target>	
 
 	<target name="data.import">
+		<property name="build.type" value="localdev" />
 		<!--
 		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
 		-->
@@ -91,6 +109,7 @@
 	</target>	
 
 	<target name="data.export">
+		<property name="build.type" value="localdev" />
 		<!--
 		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
 		-->
