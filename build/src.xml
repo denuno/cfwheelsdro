@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <src>
 	<project>
-		<src dest="@src.dir@/cfwheels" type="svn"
-		uri="http://cfwheels.googlecode.com/svn/trunk/" 
-		user="" password="" />
+		<src dest="@src.dir@/../" type="git"
+		uri="git@github.com:denuno/cfwheelsdro.git" 
+		user="@cfwheelsdro.git.user@" password="@cfwheelsdro.git.password@" />
 	<!--
 		<src dest="../" type="svn" 
 		uri="http://subversion.assembla.com/svn/cfdistro/trunk/cfdistro" 
@@ -11,6 +11,9 @@
 	-->
 	</project>
 	<sources>
+		<src dest="@src.dir@/cfwheels" type="svn"
+		uri="http://cfwheels.googlecode.com/svn/trunk/" 
+		user="" password="" />
 <!-- 
 		<src dest="@src.dir@/mxunit" type="svn" 
 		uri="http://mxunit.googlecode.com/svn/mxunit/trunk"
