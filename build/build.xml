@@ -1,17 +1,32 @@
-<project name="distro.build" default="build.localdev" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="cfdistro/antprettybuild.xsl"?>
+<project name="distro.build" default="help" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
-	<loadproperties srcfile="build.properties"/>
-	<import file="./cfdistro/build.xml"/>
-	<!--
+    <description>
+        cfwheels development and deployment
+    </description>
+
+    <target name="help" description="lists main targets">
+        <java classname="org.apache.tools.ant.Main">
+            <arg value="-buildfile"/>
+            <arg value="${ant.file}"/>
+            <arg value="-projecthelp"/>
+        </java>
+    </target>
+
+    <loadproperties srcfile="build.properties"/>
 	<import file="/workspace/cfdistro/src/cfdistro/build.xml" />
+	<!--
+	<import file="./cfdistro/build.xml"/>
 	 -->
 
+	
 	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir">
 		<!-- add mappings -->
 		<!--
 		<mapping physical="${basedir}/../../docs" virtual="/docs"/>
-		-->
 		<mapping physical="${basedir}/../test" virtual="/test"/>
+		-->
 		<mapping physical="${basedir}/../pub" virtual="/pub"/>
 		<!-- add custom tags example
 		<customtag physical="${src.dir}/cfdistro/ext/cfmltags/cfantrunner" virtual="/cfantrunner"/>
@@ -84,7 +99,12 @@
 		-->		
 		
 		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
+		<!-- we get crazy here, and test both railo and acf before pushing -->
 		<antcontrib:runtarget target="tests.start.run.stop" />
+		<antcontrib:var name="default.cfengine" value="railo" />
+		<antcall target="tests.build.start.run.stop" />
+		<antcontrib:var name="default.cfengine" value="acf" />
+		<antcall target="tests.build.start.run.stop" />
 		<antcontrib:if>
 			<equals arg1="${tests.results}" arg2="pass" />
 			<then>
@@ -100,6 +120,44 @@
 			</else>
 		</antcontrib:if>
 	</target>	
+
+	<target name="run.tests.push.acf.railo" >
+		<!--
+		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
+		-->
+		<!--
+		already applied to git cfwheelsdro
+		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>
+		-->		
+		
+		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
+		<!-- we get crazy here, and test both railo and acf before pushing -->
+		<antcontrib:runtarget target="tests.start.run.stop" />
+		<antcontrib:var name="default.cfengine" value="railo" />
+		<antcall target="tests.build.start.run.stop" />
+		<antcontrib:var name="default.cfengine" value="acf" />
+		<antcall target="tests.build.start.run.stop" />
+		<antcontrib:if>
+			<equals arg1="${tests.results}" arg2="pass" />
+			<then>
+				<git command="push" dir="../">
+					<args>
+						<arg value="origin" />
+						<arg value="master" />
+					</args>
+				</git>
+			</then>
+			<else>
+				<echo message="tests failed, not pushing to origin master"/>
+			</else>
+		</antcontrib:if>
+	</target>	
+	
+	
+	<target name="diff.with.svn">
+		<diff-with-svn source="${src.dir}/cfwheels" uri="http://cfwheels.googlecode.com/svn/trunk/"/>
+	</target>	
+
 
 	<target name="data.import">
 		<property name="build.type" value="localdev" />
@@ -130,7 +188,4 @@
 		<antcontrib:runtarget target="runwar.stop" />
 	</target>	
 	
-	<target name="build.war.src" depends="compile-cf">
-		<antcontrib:runtarget target="build.war.src" />
-	</target>
 </project>
