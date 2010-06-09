@@ -1,5 +1,12 @@
 <cfsetting requesttimeout="10000" showdebugoutput="false">
 <cfparam name="params.type" default="core">
+<cfif structKeyExists(form,"fieldnames")>
+	<!--- total hack job for tests/dispatch/createParams:test_multipart --->
+	<cfset request.wheels.showDebugInformation = false />
+	<cfwddx action="cfml2wddx" input="#params#" output="wddxed">
+	<cfset writeoutput(wddxed)/>
+	<cfabort>
+</cfif>
 <cfset testresults = $createObjectFromRoot(path=application.wheels.wheelsComponentPath, fileName="test", method="$WheelsRunner", options=params)>
 
 <cfif !isStruct(testresults)>

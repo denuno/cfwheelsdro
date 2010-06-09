@@ -103,4 +103,19 @@
 		</cfscript>
 	</cffunction>
 
+	<cffunction name="test_multipart" access="remote">
+		<cfhttp url="http://#cgi.SERVER_NAME#:#cgi.SERVER_PORT#/#getContextRoot()#/index.cfm?controller=wheels&action=wheels&view=tests&type=core" method="post">
+			<cfhttpparam type="file" name="file_field" file="#getTemplatePath()#" />
+			<cfhttpparam type="file" name="file_field" file="#getTemplatePath()#" />
+			<cfhttpparam type="formfield" name="form_field" value="funtimes" />
+			<cfhttpparam type="formfield" name="form_field" value="funtimes" />
+		</cfhttp>
+		<cfwddx action="wddx2cfml" input="#cfhttp.FileContent#" output="loc.params">
+		<cfscript>
+			assert('IsStruct(loc.params) eq true');
+			assert('IsArray(loc.params.form_field) eq true');
+			assert('IsArray(loc.params.file_field) eq true');
+		</cfscript> 
+	</cffunction>
+
 </cfcomponent>
