@@ -15,12 +15,12 @@
 		<cfif tempFile neq GetCurrentTemplatePath()>
 			<!--- on railo this was overwriting the test cfc itself, thus the if --->
 			<cffile action="write" output="<cfoutput>start:controllerlayout##contentForLayout()##end:controllerlayout</cfoutput>" file="#tempFile#">
+			<cfset application.wheels.existingLayoutFiles = "test">
+			<cfset controller.renderPage()>
+			<cfset assert("request.wheels.response Contains 'view template content' AND request.wheels.response Contains 'start:controllerlayout' AND request.wheels.response Contains 'end:controllerlayout'")>
+			<cfset application.wheels.existingLayoutFiles = "">
+			<cffile action="delete" file="#tempFile#">
 		</cfif>
-		<cfset application.wheels.existingLayoutFiles = "test">
-		<cfset controller.renderPage()>
-		<cfset assert("request.wheels.response Contains 'view template content' AND request.wheels.response Contains 'start:controllerlayout' AND request.wheels.response Contains 'end:controllerlayout'")>
-		<cfset application.wheels.existingLayoutFiles = "">
-		<cffile action="delete" file="#tempFile#">
 	</cffunction>
 
 	<cffunction name="test_rendering_with_default_layout_in_root">
