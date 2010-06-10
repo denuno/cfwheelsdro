@@ -37,7 +37,7 @@
 		<delete dir="${runwar.basedir}/bin"/>
 	</target>
 
-	<target name="runembedded.jar" depends="runwar.compile">
+	<target name="runembedded.jar" depends="runwar.compile" description="creates an jar with the WAR embedded">
 		<mkdir dir="${dist.dir}"/>
 		<echo file="${war.temp.dir}/../runwar.properties" message="war.name=${war.name}"/>
 		<jar destfile="${dist.dir}/${war.name}.jar" filesetmanifest="mergewithoutmain">
@@ -58,7 +58,7 @@
 		<echo message="${errlog}" />
 	</target>
 
-	<target name="runwar.start" depends="runwar.jar">
+	<target name="runwar.start" depends="runwar.jar" description="starts jetty-runner server">
 		<echoproperties prefix="runwar"/>
 		<echo message="starting jetty"/>
 		<sequential>
@@ -125,20 +125,20 @@
 	</target>
 	
 	
-	<target name="runwar.stop">
+	<target name="runwar.stop" description="stops jetty-runner server">
 		<java classname="runwar.Stop" classpathref="build.lib.path">
 			<arg value="${runwar.stop.socket}" />
 		</java>
 	</target>
 
-	<target name="runwar.openUrl">
+	<target name="runwar.openUrl" description="launches a browser pointing at ${runwar.url}">
 		<java classname="runwar.BrowserOpener" classpathref="build.lib.path" failonerror="true" fork="true">
 			<arg value="${runwar.url}" />
 		</java>			
 	</target>
 	
 	
-	<target name="runwar.cycle">
+	<target name="runwar.start.stop" description="starts and then stops jetty-runner server for some odd reason.  generation of stuff maybe?">
 		<parallel>
 			<sequential>
 				<antcall target="runwar.start"/>

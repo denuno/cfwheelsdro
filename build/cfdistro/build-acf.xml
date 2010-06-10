@@ -4,6 +4,8 @@
 	<property name="ext.acf.war" location="${ext.acf.dir}/9/cfusion.war" />
 	<property name="cache.trusted" value="false" />
 	<property name="cache.saveclassfiles" value="false" />
+	
+	<import file="java/acfdsnencrypt/build.xml" />
 
 	<target name="acf.build" depends="clean">
 		<unzip src="${ext.acf.war}"
@@ -58,7 +60,7 @@ vendor=0YV\#Y\!,U&;_;YN@)&)B'"WP  \n
 		<antcontrib:runtarget target="acf.datasources.build" />
 		<antcontrib:runtarget target="acf.add.libs" />
 		<antcontrib:runtarget target="set.debug.acf" />
-		<antcontrib:runtarget target="cfantrunner.install" />
+		<antcontrib:runtarget target="cfantrunner.install" />		
 	</target>
 	
 	<target name="acf.build.war.localdev" depends="acf.war.build">
@@ -249,6 +251,8 @@ vendor=0YV\#Y\!,U&;_;YN@)&)B'"WP  \n
 	        <param name="sqldelete" path="@sqldelete" default="true"/>
 	        <param name="sqlalter" path="@sqlalter" default="true"/>
 	        <param name="sqlgrant" path="@sqlgrant" default="true"/>
+	        <param name="sqldrop" path="@sqldrop" default="true"/>
+	        <param name="sqlcreate" path="@sqlcreate" default="true"/>
 	        <param name="maintainconnection" path="@maintainconnection" default="true"/>
 	        <param name="logintimeout" path="@logintimeout" default="120"/>
 	        <param name="connectionretries" path="@connectionretries" default="0"/>
@@ -258,392 +262,48 @@ vendor=0YV\#Y\!,U&;_;YN@)&)B'"WP  \n
 	        <param name="jdbc" path="@jdbc" default="mysql"/>
 	        <param name="jdbcstring" path="@jdbcstring" default="jdbc:mysql://{host}:{port}/{database}"/>
 	        <actions>
+	    		<requires-ext resource="${ext.acf.dir}/9/dsn.xml" />
+	        	<property name="dsn.password.plaintext" value="@{password}" />
+	    		<antcontrib:runtarget target="acfdsnencrypt.encrypt" />
+				<loadfile property="dsn.xml" srcFile="${ext.acf.dir}/9/dsn.xml">
+					<filterchain>
+						<replacetokens>
+			                <token key="distro.name" value="${distro.name}"/>
+			                <token key="disable_autogenkeys" value="false"/>
+			                <token key="class" value="@{class}"/>
+			                <token key="alter" value="@{sqlalter}"/>
+			                <token key="validationQuery" value=""/>
+			                <token key="grant" value="@{sqlgrant}"/>
+			                <token key="driver" value="@{jdbc}"/>
+			                <token key="update" value="@{sqlupdate}"/>
+			                <token key="buffer" value="64000.0"/>
+			                <token key="delete" value="@{sqldelete}"/>
+			                <token key="pooling" value="true"/>
+			                <token key="url" value="@{jdbcstring}"/>
+			                <token key="password" value="${dsn.password.encrypted}"/>
+			                <token key="interval" value="420.0"/>
+			                <token key="disable_blob" value="true"/>
+			                <token key="name" value="@{name}"/>
+			                <token key="create" value="@{sqlcreate}"/>
+			                <token key="storedproc" value="true"/>
+			                <token key="description" value="@{name}"/>
+			                <token key="login_timeout" value="@{logintimeout}.0"/>
+			                <token key="insert" value="@{sqlinsert}"/>
+			                <token key="drop" value="@{sqldrop}"/>
+			                <token key="disable_clob" value="true"/>
+			                <token key="revoke" value="true"/>
+			                <token key="username" value="@{username}"/>
+			                <token key="select" value="@{sqlselect}"/>
+			                <token key="disable" value="false"/>
+			            </replacetokens>
+					</filterchain>
+				</loadfile>
 	        	<antcontrib:var name="datasource.exists" unset="true"/>
-				<xmltask source="${war.temp.dir}/WEB-INF/cfusion/lib/neo-datasource.xml" dest="${war.temp.dir}/WEB-INF/cfusion/lib/neo-datasource.xml">
+				<xmltask source="${war.temp.dir}/WEB-INF/cfusion/lib/neo-datasource.xml" dest="${war.temp.dir}/WEB-INF/cfusion/lib/neo-datasource.xml" omitHeader="true">
 	  					<copy path="//data/array/struct/var[@name='@{name}']/@name" attrValue="true" property="datasource.exists"/>
-	  					<replace path="//data/array/struct/var[@name='@{name}']" if="datasource.exists">
-	  					<![CDATA[
-						<var name='@{name}'>
-							<struct type='coldfusion.server.ConfigMap'>
-								<var name='disable_autogenkeys'>
-									<boolean value='false' />
-								</var>
-								<var name='CLASS'>
-									<string>@{class}</string>
-								</var>
-								<var name='alter'>
-									<boolean value='@{sqlalter}' />
-								</var>
-								<var name='validationQuery'>
-									<string>
-									</string>
-								</var>
-								<var name='grant'>
-									<boolean value='@{sqlgrant}' />
-								</var>
-								<var name='DRIVER'>
-									<string>@{jdbc}</string>
-								</var>
-								<var name='update'>
-									<boolean value='true' />
-								</var>
-								<var name='buffer'>
-									<number>64000.0</number>
-								</var>
-								<var name='delete'>
-									<boolean value='true' />
-								</var>
-								<var name='pooling'>
-									<boolean value='true' />
-								</var>
-								<var name='url'>
-									<string>@{jdbcstring}</string>
-								</var>
-								<var name='password'>
-									<string>@{password}</string>
-								</var>
-								<var name='interval'>
-									<number>420.0</number>
-								</var>
-								<var name='disable_blob'>
-									<boolean value='true' />
-								</var>
-								<var name='NAME'>
-									<string>test</string>
-								</var>
-								<var name='create'>
-									<boolean value='true' />
-								</var>
-								<var name='storedproc'>
-									<boolean value='true' />
-								</var>
-								<var name='description'>
-									<string>
-									</string>
-								</var>
-								<var name='login_timeout'>
-									<number>30.0</number>
-								</var>
-								<var name='insert'>
-									<boolean value='true' />
-								</var>
-								<var name='drop'>
-									<boolean value='true' />
-								</var>
-								<var name='urlmap'>
-									<struct type='coldfusion.server.ConfigMap'>
-										<var name='databaseFile'>
-											<string>
-											</string>
-										</var>
-										<var name='MaxPooledStatements'>
-											<string>100</string>
-										</var>
-										<var name='isnewdb'>
-											<string>false</string>
-										</var>
-										<var name='host'>
-											<string>
-											</string>
-										</var>
-										<var name='port'>
-											<string>
-											</string>
-										</var>
-										<var name='pageTimeout'>
-											<string>
-											</string>
-										</var>
-										<var name='defaultpassword'>
-											<string>
-											</string>
-										</var>
-										<var name='spyLogFile'>
-											<string>
-											</string>
-										</var>
-										<var name='_logintimeout'>
-											<number>30.0</number>
-										</var>
-										<var name='selectMethod'>
-											<string>direct</string>
-										</var>
-										<var name='UseTrustedConnection'>
-											<string>false</string>
-										</var>
-										<var name='datasource'>
-											<string>
-											</string>
-										</var>
-										<var name='sendStringParametersAsUnicode'>
-											<string>false</string>
-										</var>
-										<var name='supportLinks'>
-											<string>true</string>
-										</var>
-										<var name='informixServer'>
-											<string>
-											</string>
-										</var>
-										<var name='database'>
-											<string>
-											</string>
-										</var>
-										<var name='defaultusername'>
-											<string>
-											</string>
-										</var>
-										<var name='maxBufferSize'>
-											<string>
-											</string>
-										</var>
-										<var name='CONNECTIONPROPS'>
-											<struct>
-											</struct>
-										</var>
-										<var name='SID'>
-											<string>
-											</string>
-										</var>
-										<var name='qTimeout'>
-											<string>0</string>
-										</var>
-										<var name='args'>
-											<string>
-											</string>
-										</var>
-										<var name='systemDatabaseFile'>
-											<string>
-											</string>
-										</var>
-										<var name='useSpyLog'>
-											<string>false</string>
-										</var>
-										<var name='TimeStampAsString'>
-											<string>no</string>
-										</var>
-									</struct>
-								</var>
-								<var name='ISJ2EE'>
-									<boolean value='false' />
-								</var>
-								<var name='disable_clob'>
-									<boolean value='true' />
-								</var>
-								<var name='blob_buffer'>
-									<number>64000.0</number>
-								</var>
-								<var name='revoke'>
-									<boolean value='true' />
-								</var>
-								<var name='username'>
-									<string>@{username}</string>
-								</var>
-								<var name='select'>
-									<boolean value='true' />
-								</var>
-								<var name='disable'>
-									<boolean value='false' />
-								</var>
-								<var name='timeout'>
-									<number>1200.0</number>
-								</var>
-							</struct>
-						</var>
-	  					]]>
-	  					</replace>
-	  					<insert path="//data/array/struct[1]" position="under" unless="datasource.exists">
-	  					<![CDATA[
-							<var name='@{name}'>
-								<struct type='coldfusion.server.ConfigMap'>
-									<var name='disable_autogenkeys'>
-										<boolean value='false' />
-									</var>
-									<var name='CLASS'>
-										<string>@{class}</string>
-									</var>
-									<var name='alter'>
-										<boolean value='@{sqlalter}' />
-									</var>
-									<var name='validationQuery'>
-										<string>
-										</string>
-									</var>
-									<var name='grant'>
-										<boolean value='@{sqlgrant}' />
-									</var>
-									<var name='DRIVER'>
-										<string>@{jdbc}</string>
-									</var>
-									<var name='update'>
-										<boolean value='true' />
-									</var>
-									<var name='buffer'>
-										<number>64000.0</number>
-									</var>
-									<var name='delete'>
-										<boolean value='true' />
-									</var>
-									<var name='pooling'>
-										<boolean value='true' />
-									</var>
-									<var name='url'>
-										<string>@{jdbcstring}</string>
-									</var>
-									<var name='password'>
-										<string>@{password}</string>
-									</var>
-									<var name='interval'>
-										<number>420.0</number>
-									</var>
-									<var name='disable_blob'>
-										<boolean value='true' />
-									</var>
-									<var name='NAME'>
-										<string>test</string>
-									</var>
-									<var name='create'>
-										<boolean value='true' />
-									</var>
-									<var name='storedproc'>
-										<boolean value='true' />
-									</var>
-									<var name='description'>
-										<string>
-										</string>
-									</var>
-									<var name='login_timeout'>
-										<number>30.0</number>
-									</var>
-									<var name='insert'>
-										<boolean value='true' />
-									</var>
-									<var name='drop'>
-										<boolean value='true' />
-									</var>
-									<var name='urlmap'>
-										<struct type='coldfusion.server.ConfigMap'>
-											<var name='databaseFile'>
-												<string>
-												</string>
-											</var>
-											<var name='MaxPooledStatements'>
-												<string>100</string>
-											</var>
-											<var name='isnewdb'>
-												<string>false</string>
-											</var>
-											<var name='host'>
-												<string>
-												</string>
-											</var>
-											<var name='port'>
-												<string>
-												</string>
-											</var>
-											<var name='pageTimeout'>
-												<string>
-												</string>
-											</var>
-											<var name='defaultpassword'>
-												<string>
-												</string>
-											</var>
-											<var name='spyLogFile'>
-												<string>
-												</string>
-											</var>
-											<var name='_logintimeout'>
-												<number>30.0</number>
-											</var>
-											<var name='selectMethod'>
-												<string>direct</string>
-											</var>
-											<var name='UseTrustedConnection'>
-												<string>false</string>
-											</var>
-											<var name='datasource'>
-												<string>
-												</string>
-											</var>
-											<var name='sendStringParametersAsUnicode'>
-												<string>false</string>
-											</var>
-											<var name='supportLinks'>
-												<string>true</string>
-											</var>
-											<var name='informixServer'>
-												<string>
-												</string>
-											</var>
-											<var name='database'>
-												<string>
-												</string>
-											</var>
-											<var name='defaultusername'>
-												<string>
-												</string>
-											</var>
-											<var name='maxBufferSize'>
-												<string>
-												</string>
-											</var>
-											<var name='CONNECTIONPROPS'>
-												<struct>
-												</struct>
-											</var>
-											<var name='SID'>
-												<string>
-												</string>
-											</var>
-											<var name='qTimeout'>
-												<string>0</string>
-											</var>
-											<var name='args'>
-												<string>
-												</string>
-											</var>
-											<var name='systemDatabaseFile'>
-												<string>
-												</string>
-											</var>
-											<var name='useSpyLog'>
-												<string>false</string>
-											</var>
-											<var name='TimeStampAsString'>
-												<string>no</string>
-											</var>
-										</struct>
-									</var>
-									<var name='ISJ2EE'>
-										<boolean value='false' />
-									</var>
-									<var name='disable_clob'>
-										<boolean value='true' />
-									</var>
-									<var name='blob_buffer'>
-										<number>64000.0</number>
-									</var>
-									<var name='revoke'>
-										<boolean value='true' />
-									</var>
-									<var name='username'>
-										<string>@{username}</string>
-									</var>
-									<var name='select'>
-										<boolean value='true' />
-									</var>
-									<var name='disable'>
-										<boolean value='false' />
-									</var>
-									<var name='timeout'>
-										<number>1200.0</number>
-									</var>
-								</struct>
-							</var>
-	  					]]>
-	  					</insert>	  				
-	  				</xmltask>
+	  					<replace path="//data/array/struct/var[@name='@{name}']" if="datasource.exists" withXml="${dsn.xml}" expandProperties="false"/>
+	  					<insert path="//data/array/struct[1]" position="under" unless="datasource.exists" xml="${dsn.xml}" />
+  				</xmltask>
 	        	<antcontrib:switch value="${datasource.exists}">
 	        	  <case value="@{name}">
 	        	    <echo message="Updated Datasource - @{name}" />

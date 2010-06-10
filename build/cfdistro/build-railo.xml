@@ -7,6 +7,8 @@
 	<property name="ext.railo.war.dir" location="${ext.railo.dir}/railo.war" />
 	<property name="railo.patch.version" value="3.1.2.014" />
 	<property name="railo.patch.buildtype" value="dev" />
+	<property name="railo.customtags.dir" value="${war.temp.dir}/WEB-INF/lib/railo-server/context/customtags" />
+	
 	
 	<target name="railo.requires">
 		<mkdir dir="${ext.railo.dir}"/>
@@ -57,7 +59,6 @@
 		<antcontrib:runtarget target="railo.datasources.build" />
 		<antcontrib:runtarget target="railo.add.libs" />
 		<antcontrib:runtarget target="railo.scheduledtasks.build" />
-		<antcontrib:runtarget target="railo.set.log.dir" />
 	</target>
 
 	<target name="railo.build.war.localdev" depends="railo.war.build">
@@ -81,19 +82,17 @@
 		</xmltask>
 	</target>
 	
-	
-	<target name="railo.build.war.binary" depends="railo.war.build,compile-cf">
+	<target name="railo.build.war.binary" depends="railo.war.build,railo.compile-cf">
 		<xmltask source="${basedir}/WEB-INF/lib/railo-server/context/railo-server.xml" dest="${basedir}/WEB-INF/lib/railo-server/context/railo-server.xml">
 			<attr path="/railo-configuration/java" attr="inspect-template" value="never" />
 		</xmltask>
 	</target>
 
-	<target name="railo.build.war.src" depends="railo.war.build,copySources">
+	<target name="railo.build.war.src" depends="railo.war.build">
+		<property name="copy.mappings.to.src" value="true"/>
 		<xmltask source="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml" dest="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml">
 			<attr path="/railo-configuration/java" attr="inspect-template" value="never" />
 		</xmltask>
-		<delete dir="${dist.dir}" />
-		<mkdir dir="${dist.dir}" />
 	</target>
 
 	<target name="railo.add.libs" if="add.libs.dir" unless="dont.add.libs">
@@ -183,42 +182,52 @@
 				<param name="virtual" path="@virtual" default="NONE" />
 				<param name="physical" path="@physical" default="NONE" />
 				<actions>
-					<antcontrib:var name="mapping.exists" unset="true" />
-					<xmltask source="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml" dest="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml">
-						<copy path="/railo-configuration/mappings/mapping[@virtual='@{virtual}']/@virtual" attrValue="true" property="mapping.exists" />
-						<replace path="/railo-configuration/mappings/mapping[@virtual=@{virtual}]/text()" if="mapping.exists">
-							<![CDATA[
-	  					<mapping
-	  						readonly="yes"
-	  						trusted="false"
-	  						virtual="@{virtual}"
-	  						physical="@{physical}"
-	  						archive=""
-	  						primary="physical"
-	  					/>
-	  					]]>
-	  					</replace>
-						<insert path="/railo-configuration/mappings" position="under" unless="mapping.exists">
-							<![CDATA[
-	  					<mapping
-	  						readonly="yes"
-	  						trusted="false"
-	  						virtual="@{virtual}"
-	  						physical="@{physical}"
-	  						archive=""
-	  						primary="physical"
-	  					/>
-	  					]]>
-	  					</insert>
-					</xmltask>
-					<antcontrib:switch value="${mapping.exists}">
-						<case value="@{virtual}">
-							<echo message="Updated Mapping - @{virtual}	 @{physical}" />
-						</case>
-						<default>
-							<echo message="Added Mapping - @{virtual} 	@{physical}" />
-						</default>
-					</antcontrib:switch>
+					<antcontrib:if>
+						<equals arg1="${copy.mappings.to.src}" arg2="true" />
+						<then>
+							<copy todir="${war.temp.dir}/@{virtual}">
+								<fileset dir="@{physical}"/>
+							</copy>
+						</then>
+						<else>
+							<antcontrib:var name="mapping.exists" unset="true" />
+							<xmltask source="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml" dest="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml">
+								<copy path="/railo-configuration/mappings/mapping[@virtual='@{virtual}']/@virtual" attrValue="true" property="mapping.exists" />
+								<replace path="/railo-configuration/mappings/mapping[@virtual=@{virtual}]/text()" if="mapping.exists">
+									<![CDATA[
+			  					<mapping
+			  						readonly="yes"
+			  						trusted="false"
+			  						virtual="@{virtual}"
+			  						physical="@{physical}"
+			  						archive=""
+			  						primary="physical"
+			  					/>
+			  					]]>
+			  					</replace>
+								<insert path="/railo-configuration/mappings" position="under" unless="mapping.exists">
+									<![CDATA[
+			  					<mapping
+			  						readonly="yes"
+			  						trusted="false"
+			  						virtual="@{virtual}"
+			  						physical="@{physical}"
+			  						archive=""
+			  						primary="physical"
+			  					/>
+			  					]]>
+			  					</insert>
+							</xmltask>
+							<antcontrib:switch value="${mapping.exists}">
+								<case value="@{virtual}">
+									<echo message="Updated Mapping - @{virtual}	 @{physical}" />
+								</case>
+								<default>
+									<echo message="Added Mapping - @{virtual} 	@{physical}" />
+								</default>
+							</antcontrib:switch>
+							</else>
+						</antcontrib:if>
 				</actions>
 			</call>
 		</xmltask>
@@ -230,34 +239,44 @@
 				<param name="virtual" path="@virtual" default="NONE" />
 				<param name="physical" path="@physical" default="NONE" />
 				<actions>
-					<antcontrib:var name="mapping.exists" unset="true" />
-					<xmltask source="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml" dest="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml">
-						<copy path="/railo-configuration/custom-tag/mapping[@physical='@{physical}']/@physical" attrValue="true" property="mapping.exists" />
-						<replace path="/railo-configuration/custom-tag/mapping[@physical=@{physical}]/text()" if="mapping.exists">
-							<![CDATA[
-	  					<mapping
-	  						trusted="false"
-	  						physical="@{physical}"
-	  					/>
-	  					]]>
-	  					</replace>
-						<insert path="/railo-configuration/custom-tag" position="under" unless="mapping.exists">
-							<![CDATA[
-	  					<mapping
-	  						trusted="false"
-	  						physical="@{physical}"
-  						/>
-	  					]]>
-	  					</insert>
-					</xmltask>
-					<antcontrib:switch value="${mapping.exists}">
-						<case value="@{physical}">
-							<echo message="Updated Custom Tag Mapping - @{physical}" />
-						</case>
-						<default>
-							<echo message="Added Custom Tag Mapping - @{physical}" />
-						</default>
-					</antcontrib:switch>
+					<antcontrib:if>
+						<equals arg1="${copy.mappings.to.src}" arg2="true" />
+						<then>
+							<copy todir="${railo.customtags.dir}/@{virtual}">
+								<fileset dir="@{physical}"/>
+							</copy>
+						</then>
+						<else>
+							<antcontrib:var name="mapping.exists" unset="true" />
+							<xmltask source="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml" dest="${war.temp.dir}/WEB-INF/lib/railo-server/context/railo-server.xml">
+								<copy path="/railo-configuration/custom-tag/mapping[@physical='@{physical}']/@physical" attrValue="true" property="mapping.exists" />
+								<replace path="/railo-configuration/custom-tag/mapping[@physical=@{physical}]/text()" if="mapping.exists">
+									<![CDATA[
+			  					<mapping
+			  						trusted="false"
+			  						physical="@{physical}"
+			  					/>
+			  					]]>
+			  					</replace>
+								<insert path="/railo-configuration/custom-tag" position="under" unless="mapping.exists">
+									<![CDATA[
+			  					<mapping
+			  						trusted="false"
+			  						physical="@{physical}"
+		  						/>
+			  					]]>
+			  					</insert>
+							</xmltask>
+							<antcontrib:switch value="${mapping.exists}">
+								<case value="@{physical}">
+									<echo message="Updated Custom Tag Mapping - @{physical}" />
+								</case>
+								<default>
+									<echo message="Added Custom Tag Mapping - @{physical}" />
+								</default>
+							</antcontrib:switch>
+						</else>
+					</antcontrib:if>
 				</actions>
 			</call>
 		</xmltask>
@@ -415,10 +434,10 @@
 	</target>
 	
 
-	<target name="compile-cf">
+	<target name="railo.compile-cf">
 		<mkdir dir="${war.temp.dir}" />
 		<sequential>
-			<antcall target="runwar.start.background" inheritAll="true" />
+			<antcontrib:runtarget target="runwar.start.background" />
 			<antcontrib:for param="file">
 				<path>
 					<dirset dir="${src.dir}">
@@ -428,7 +447,7 @@
 				<sequential>
 					<antcontrib:propertyregex override="yes" property="mappingName" input="@{file}" regexp=".*/|.*\\([^\.]*)" replace="\1" />
 					<echo message="Compiling mapping - ${mappingName} - @{file}" />
-					<get src="http://localhost:8080/railo/build.cfc?method=compile-mapping&amp;mapping=${mappingName}" dest="${mappingName}.compile.results.properties" verbose="true" ignoreerrors="true" />
+					<get src="http://localhost:${runwar.port}${runwar.war.contextpath}/Build.cfc?method=compile-mapping&amp;mapping=${mappingName}" dest="${mappingName}.compile.results.properties" verbose="true" ignoreerrors="true" />
 					<copy todir="${war.temp.dir}" verbose="true">
 						<fileset dir="${war.temp.dir}/WEB-INF/railo/cfclasses/" />
 						<chainedmapper>
@@ -438,10 +457,9 @@
 					</copy>
 				</sequential>
 			</antcontrib:for>
-			<antcall target="runwar.stop" inheritAll="true" />
+			<antcontrib:runtarget target="runwar.stop" />
 		</sequential>
 	</target>
-
 
 	<target name="railo.archives.build" depends="exists.archives.xml" if="exists.archives.xml">
 		<copy file="${cfdistro.basedir}/Build.cfc" todir="${runwar.war.path}" />
@@ -449,7 +467,7 @@
 		<delete dir="${railo.archive.dir}" />
 		<mkdir dir="${railo.archive.dir}/buildresults" />
 		<sequential>
-			<antcall target="runwar.start.background" inheritAll="true" />
+			<antcontrib:runtarget target="runwar.start.background" />
 			<xmltask source="railo.archives.${build.type}.xml">
 				<call path="archives/*">
 					<param name="archive" path="@archive" default="NONE" />
@@ -461,7 +479,7 @@
 					</actions>
 				</call>
 			</xmltask>
-			<antcall target="runwar.stop" inheritAll="true" />
+			<antcontrib:runtarget target="runwar.stop" />
 		</sequential>
 		<echo message="created archives from ${basedir}/railo.archives.${build.type}.xml" />
 		<delete file="${runwar.war.path}/Build.cfc" />
@@ -495,11 +513,11 @@
 
 	<!-- these are overridden prior -->
 	<target name="clean">
-		<antcall target="cfdistro.clean" />
+		<antcontrib:runtarget target="cfdistro.clean" />
 	</target>
 
 	<target name="copySources">
-		<antcall target="cfdistro.copySources" />
+		<antcontrib:runtarget target="cfdistro.copySources" />
 	</target>
 
 	<target name="exists.mappings.xml">

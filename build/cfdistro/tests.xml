@@ -1,6 +1,6 @@
 <project name="tests" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
-	
+
 	<property name="tests.run.url" value="http://localhost:${runwar.port}/${war.name}/tests/run.cfm" />
 	<target name="tests.run">
 		<mkdir dir="${war.temp.dir}" />
@@ -8,39 +8,41 @@
 		<sequential>
 			<echo message="running tests: ${tests.run.url}" />
 			<antcontrib:trycatch property="foo" reference="bar">
-			  <try>
-				<antcontrib:if>
-					<equals arg1="${default.cfengine}" arg2="acf" />
-					<then>
-						<echo message="Running ACF, sleeping for 21 secs" />
-						<sleep seconds="21" />
-					</then>
-				</antcontrib:if>
-				<get src="${tests.run.url}" dest="${testresult.file}" verbose="true" ignoreerrors="true" />
-			  	<property name="tests.results" value="pass" />
-				<loadfile property="tesresults" srcFile="${testresult.file}" />
-				<echo message="${tesresults}" />
-				<sleep seconds="10" />
-			    <echo>TEST RUN</echo>
-			  </try>
+				<try>
+					<antcontrib:var name="tests.results" unset="true" />
+					<antcontrib:if>
+						<equals arg1="${default.cfengine}" arg2="acf" />
+						<then>
+							<echo message="Running ACF, sleeping for 21 secs" />
+							<sleep seconds="21" />
+						</then>
+					</antcontrib:if>
+					<get src="${tests.run.url}" dest="${testresult.file}" verbose="true" ignoreerrors="true" />
+					<property name="tests.results" value="pass" />
+					<loadfile property="tesresults" srcFile="${testresult.file}" />
+					<echo message="${tesresults}" />
+					<sleep seconds="10" />
+					<echo>TEST RUN</echo>
+				</try>
 
-			  <catch>
-			  	<property name="tests.results" value="fail" />
-			    <echo>TEST RUN FAIL!!!</echo>
-			  </catch>
+				<catch>
+					<antcontrib:var name="tests.results" unset="true" />
+					<property name="tests.results" value="fail" />
+					<echo>TEST RUN FAIL!!!</echo>
+				</catch>
 
-			  <finally>
-			  	<!--
+				<finally>
+					<!--
 			  	<cfmail to="valliantster@gmail.com" from="valliantster@gmail.com" subject="fart" message="it is good for the heart"/>
 			  	-->
-			  </finally>
+				</finally>
 			</antcontrib:trycatch>
 		</sequential>
 	</target>
-	
+
 	<target name="cfmail.test">
-		<property name="build.type" value="localdev"/>
-	  	<cfmail to="valliantster@gmail.com" from="valliantster@gmail.com" subject="fart" message="it is good for the heart"/>
+		<property name="build.type" value="localdev" />
+		<cfmail to="valliantster@gmail.com" from="valliantster@gmail.com" subject="fart" message="it is good for the heart" />
 	</target>
 
 	<target name="tests.start.run">
@@ -60,8 +62,8 @@
 			<antcontrib:runtarget target="runwar.stop" />
 		</sequential>
 	</target>
-	
-	
+
+
 	<target name="tests.build.start.run.stop">
 		<mkdir dir="${war.temp.dir}" />
 		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />

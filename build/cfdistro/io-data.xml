@@ -24,25 +24,6 @@
 		</else>
 	</antcontrib:if>
 
-	<target name="database-setup" description="Creates the database structure and inserts data into the database">
-		<requires-ext resource="/ext/ddlutils/" />
-		<taskdef name="ddlToDatabase" classname="org.apache.ddlutils.task.DdlToDatabaseTask" classpathref="data.lib.path" />
-
-		<ddlToDatabase>
-			<database url="jdbc:mysql://localhost/test" driverClassName="com.mysql.jdbc.Driver" username="localuser" password="l0calh0st" />
-			<fileset dir="${basedir}">
-				<include name="dsndata.localdev.xml" />
-			</fileset>
-
-			<createDatabase failonerror="false" />
-
-			<writeSchemaToDatabase />
-			<!--
-			<writeDataToDatabase datafile="src/data/data.xml" />
-			-->
-		</ddlToDatabase>
-	</target>
-
 	<macrodef name="dsn-schema">
 		<attribute name="dsn" />
 		<attribute name="schemafile" />
@@ -78,7 +59,7 @@
 					<param name="jdbc" path="@jdbc" default="mysql" />
 					<param name="jdbcstring" path="@jdbcstring" default="jdbc:mysql://{host}:{port}/{database}" />
 					<actions>
-						<echo message="connecting: @{jdbcstring}" />
+						<echo message="connecting: @{username} @{password} @ @{jdbcstring}" />
 						<ddlToDatabase schemaFile="@{schemafile}" verbosity="DEBUG">
 
 							<database url="@{jdbcstring}" driverClassName="@{class}" username="@{username}" password="@{password}" />

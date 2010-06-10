@@ -127,7 +127,7 @@
 			<echo message="valueA is greater than valueB" />
 		</target>
 		-->
-	<target name="clean">
+	<target name="clean" description="cleans project">
 		<delete dir="${temp.dir}" />
 		<delete dir="${dist.dir}" />
 		<delete dir="${basedir}/WEB-INF/lib/railo-server/context" />
@@ -136,8 +136,9 @@
 	</target>
 
 	<target name="jar.war">
-		<delete file="${basedir}/dist/${war.name}.war" />
-		<jar jarfile="${basedir}/dist/${war.name}.war" basedir="${war.temp.dir}" />
+		<mkdir dir="${dist.dir}" />
+		<delete file="${dist.dir}/${war.name}.war" />
+		<jar jarfile="${dist.dir}/${war.name}.war" basedir="${war.temp.dir}" />
 	</target>
 
 	<target name="copy.temp.to.dist">
@@ -146,7 +147,7 @@
 		</copy>
 	</target>
 
-	<target name="copy.cfdistro.dist" depends="clean">
+	<target name="copy.cfdistro.dist" depends="clean" description="copies cfdistro files to ${cfdistro.target.build.dir}">
 		<echo message="${cfdistro.target.build.dir}" />
 		<copy todir="${cfdistro.target.build.dir}/cfdistro" verbose="true">
 			<fileset dir="${cfdistro.basedir}/" includes="*.*" />
@@ -154,7 +155,7 @@
 		</copy>
 	</target>
 
-	<target name="cfdistro.skeleton" >
+	<target name="cfdistro.skeleton" description="creates a distro skeleton in ${target.dir} named ${distro.name}">
 		<property name="prop.message" value="is required! ${line.separator} Example: ant -Dtarget.dir=/var/www/superdistro -Ddistro.name=superdistro cfdistro.skeleton"/>
         <fail message="target.dir ${prop.message}" unless="target.dir"/>
         <fail message="distro.name ${prop.message}" unless="distro.name"/>
@@ -193,7 +194,7 @@
 		<move file="${target.dir}/build/build.xml.txt" tofile="${target.dir}/build/build.xml"/>
 	</target>
 
-	<target name="build.localdev" depends="clean">
+	<target name="build.localdev" depends="clean" description="builds the localdev environment">
 		<property name="build.type" value="localdev" />
 		<antcontrib:runtarget target="${default.cfengine}.build.war.${build.type}" />
 		<!-- <antcontrib:runtarget target="servlet.fileservlet.install" /> -->
@@ -201,41 +202,45 @@
 		<antcontrib:runtarget target="startscripts.create" />
 	</target>
 
-	<target name="build.localdev.start.launch" depends="build.localdev">
+	<target name="build.localdev.start.launch" depends="build.localdev" description="builds the localdev environment, starts a server, launches a browserwindow to ${runwar.url}">
 		<sequential>
 			<antcontrib:runtarget target="runwar.start" />
 			<antcontrib:runtarget target="runwar.openUrl" />
 		</sequential>
 	</target>
 
-	<target name="build.dev">
+	<target name="build.dev" description="runs the dev build">
 		<property name="build.type" value="dev" />
 		<antcontrib:runtarget target="${default.cfengine}.build.war.src" />
 	</target>
 
-	<target name="build.qa">
+	<target name="build.qa" description="runs the QA build">
 		<property name="build.type" value="qa" />
 		<antcontrib:runtarget target="${default.cfengine}.build.war.${build.type}" />
 	</target>
 
-	<target name="build.prod">
+	<target name="build.prod" description="runs the production build">
 		<property name="build.type" value="prod" />
 		<antcontrib:runtarget target="${default.cfengine}.build.war.${build.type}" />
 	</target>
 
-	<target name="build.war.src">
+	<target name="build.war.src" description="builds a war and copies ${src.dir} into it">
 		<property name="build.type" value="prod" />
+		<property name="copy.mappings.to.src" value="true"/>
 		<antcontrib:runtarget target="${default.cfengine}.build.war.src" />
 	</target>
 
-	<target name="build.war.runner">
-		<copy file="./lib/${jetty-runner.jar}" tofile="${basedir}/dist/${war.name}-runner.jar" overwrite="true" />
-		<javac srcdir="${runwar.basedir}/src/runwar" includes="RunEmbeddedWar.java" destdir="${basedir}/dist/" classpathref="build.lib.path" />
-		<echo file="${basedir}/dist/runwar.properties" message="war.name=${war.name}" />
+	<target name="build.war.runner" depends="build.war.src" description="creates an runnable jar with the WAR embedded">
+		<antcontrib:runtarget target="runwar.start.stop" />
+		<antcontrib:runtarget target="jar.war" />
+		<copy file="${cfdistro.basedir}/lib/${jetty-runner.jar}" tofile="${basedir}/dist/${war.name}-runner.jar" overwrite="true" />
+		<javac srcdir="${runwar.basedir}/src/runwar" includes="RunEmbeddedWar.java" destdir="${dist.dir}" classpathref="build.lib.path" />
+		<echo file="${dist.dir}/runwar.properties" message="war.name=${war.name}" />
 		<jar jarfile="${basedir}/dist/${war.name}-runner.jar" basedir="${basedir}/dist/" excludes="*.jar,*.ra" update="true">
 			<manifest>
 				<attribute name="Main-Class" value="runwar.RunEmbeddedWar" />
 			</manifest>
+			<fileset dir="${dist.dir}" excludes="${war.name}-runner.jar"/>
 		</jar>
 	</target>
 
@@ -564,27 +569,7 @@
 	<target name="compile-cf">
 		<mkdir dir="${war.temp.dir}" />
 		<sequential>
-			<antcall target="runwar.start.background" inheritAll="true" />
-			<antcontrib:for param="file">
-				<path>
-					<dirset dir="${src.dir}">
-						<include name="*" />
-					</dirset>
-				</path>
-				<sequential>
-					<antcontrib:propertyregex override="yes" property="mappingName" input="@{file}" regexp=".*/|.*\\([^\.]*)" replace="\1" />
-					<echo message="Compiling mapping - ${mappingName} - @{file}" />
-					<get src="http://localhost:8080/railo/build.cfc?method=compile-mapping&amp;mapping=${mappingName}" dest="${mappingName}.compile.results.properties" verbose="true" ignoreerrors="true" />
-					<copy todir="${war.temp.dir}" verbose="true">
-						<fileset dir="${basedir}/WEB-INF/railo/cfclasses/" />
-						<chainedmapper>
-							<regexpmapper from="^CF_.+_(${mappingName})\d{4}/+(.*)" to="\1/\2" />
-							<regexpmapper from="(.*)_cf(.).+\.class$$" to="\1.cf\2" />
-						</chainedmapper>
-					</copy>
-				</sequential>
-			</antcontrib:for>
-			<antcall target="runwar.stop" inheritAll="true" />
+			<antcontrib:runtarget target="${default.cfengine}.compile-cf" />
 		</sequential>
 	</target>
 
@@ -645,9 +630,6 @@
 		<copy todir="${dist.dir}/cfdistro/build/cfdistro" verbose="false">
 			<fileset dir="${cfdistro.basedir}/" excludes="ext/**" />
 		</copy>
-		<zip destfile="${dist.dir}/${distro.name}-distro.zip"
-		       basedir="${dist.dir}/cfdistro"
-		 />
 	</target>
 
 </project>
