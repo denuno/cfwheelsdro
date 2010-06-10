@@ -2,45 +2,44 @@
 <?xml-stylesheet type="text/xsl" href="cfdistro/antprettybuild.xsl"?>
 <project name="distro.build" default="help" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
-    <description>
+	<description>
         cfwheels development and deployment
     </description>
 
-    <target name="help" description="lists main targets">
-        <java classname="org.apache.tools.ant.Main">
-            <arg value="-buildfile"/>
-            <arg value="${ant.file}"/>
-            <arg value="-projecthelp"/>
-        </java>
-    </target>
+	<target name="help" description="lists main targets">
+		<java classname="org.apache.tools.ant.Main">
+			<arg value="-buildfile" />
+			<arg value="${ant.file}" />
+			<arg value="-projecthelp" />
+		</java>
+	</target>
 
-    <loadproperties srcfile="build.properties"/>
+	<loadproperties srcfile="build.properties" />
 	<import file="/workspace/cfdistro/src/cfdistro/build.xml" />
 	<!--
 	<import file="./cfdistro/build.xml"/>
 	 -->
 
-	
+
 	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir">
 		<!-- add mappings -->
 		<!--
 		<mapping physical="${basedir}/../../docs" virtual="/docs"/>
 		<mapping physical="${basedir}/../test" virtual="/test"/>
+		<mapping physical="${basedir}/../pub" virtual="/pub" />
 		-->
-		<mapping physical="${basedir}/../pub" virtual="/pub"/>
 		<!-- add custom tags example
 		<customtag physical="${src.dir}/cfdistro/ext/cfmltags/cfantrunner" virtual="/cfantrunner"/>
 		 -->
 		<!-- run cfdistro build -->
 		<antcontrib:runtarget target="cfdistro.build.localdev" />
 		<!-- use fileServlet to map external resources  -->
-		<fileservlet servletname="fileServlet" directory="${src.dir}/../pub" urlpattern="/pub/*"/>
+		<fileservlet servletname="fileServlet" directory="${src.dir}/../pub" urlpattern="/pub/*" />
 		<!-- add urlrewrite filter and rewrite rules -->
 		<!-- getting "Failed to specify text in replace" means you need to escape & like so:  &amp;amp;-->
 		<antcontrib:runtarget target="urlrewritefilter.servlet.install" />
-<!--
+		<!--
 		<urlrewritexml name="cfwheelsdro-rewites">
-			<![CDATA[
 			<rule match-type="regex">
 				<condition type="request-uri" operator="notequal" next="and">/flex2gateway/*</condition>
 				<condition type="request-uri" operator="notequal" next="and">/jrunscripts/*</condition>
@@ -59,13 +58,12 @@
 				<from>^(.*)$</from>
 				<to last="true">/cfwheels/rewrite.cfm?\$pathinfo=$1&amp;%{query-string}</to>
 			</rule>
-			]]>
 		</urlrewritexml>
 		<urlrewrite name="rootToPub" note="SERVE EVERYTHING FROM PUB"
 			from="/(.*)" to="/pub/$1" type="forward"/>
 		<urlrewriteout name="pubToRoot" from="^/pub/(.*)" to="/$1"/>
 -->
-		<urlrewriteout name="rootToContextPath" from="/(.*)" to="%{context-path}/$1" type="forward"/>
+		<urlrewriteout name="rootToContextPath" from="/(.*)" to="%{context-path}/$1" type="forward" />
 		<antcontrib:if>
 			<or>
 				<equals arg1="${default.cfengine}" arg2="acf" />
@@ -81,111 +79,91 @@
 			<else>
 			</else>
 		</antcontrib:if>
-		<echo file="${war.temp.dir}/Application.cfc"><![CDATA[<cfcomponent output="false">
-				<cfinclude template="/cfwheels/wheels/functions.cfm" />
+		<echo file="${war.temp.dir}/Application.cfc">
+			<![CDATA[<cfcomponent output="false">
+			<cfinclude template="/cfwheels/wheels/functions.cfm" />
 			</cfcomponent>]]>
 		</echo>
-		<echo file="${war.temp.dir}/index.cfm"><![CDATA[<cfinclude template="/cfwheels/wheels/index.cfm" />]]>
+		<echo file="${war.temp.dir}/index.cfm">
+			<![CDATA[<cfinclude template="/cfwheels/wheels/index.cfm" />]]>
 		</echo>
 	</target>
 
-	<target name="run.tests" >
-		<!--
-		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
-		-->
+	<target name="run.tests">
 		<!--
 		already applied to git cfwheelsdro
 		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>
-		-->		
-		
-		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
-		<!-- we get crazy here, and test both railo and acf before pushing -->
-		<antcontrib:runtarget target="tests.start.run.stop" />
-		<antcontrib:var name="default.cfengine" value="railo" />
-		<antcall target="tests.build.start.run.stop" />
-		<antcontrib:var name="default.cfengine" value="acf" />
-		<antcall target="tests.build.start.run.stop" />
-		<antcontrib:if>
-			<equals arg1="${tests.results}" arg2="pass" />
-			<then>
-				<git command="push" dir="../">
-					<args>
-						<arg value="origin" />
-						<arg value="master" />
-					</args>
-				</git>
-			</then>
-			<else>
-				<echo message="tests failed, not pushing to origin master"/>
-			</else>
-		</antcontrib:if>
-	</target>	
+		-->
+		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml" />
 
-	<target name="run.tests.push.acf.railo" >
-		<!--
-		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
-		-->
-		<!--
-		already applied to git cfwheelsdro
-		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>
-		-->		
-		
-		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
-		<!-- we get crazy here, and test both railo and acf before pushing -->
-		<antcontrib:runtarget target="tests.start.run.stop" />
-		<antcontrib:var name="default.cfengine" value="railo" />
-		<antcall target="tests.build.start.run.stop" />
-		<antcontrib:var name="default.cfengine" value="acf" />
-		<antcall target="tests.build.start.run.stop" />
-		<antcontrib:if>
-			<equals arg1="${tests.results}" arg2="pass" />
-			<then>
-				<git command="push" dir="../">
-					<args>
-						<arg value="origin" />
-						<arg value="master" />
-					</args>
-				</git>
-			</then>
-			<else>
-				<echo message="tests failed, not pushing to origin master"/>
-			</else>
-		</antcontrib:if>
-	</target>	
-	
-	
+		<sequential>
+			<antcontrib:var name="build.type" value="localdev" />
+
+			<!-- we get crazy here, and test both railo and acf before pushing -->
+			<antcontrib:var name="default.cfengine" value="railo" />
+			<antcontrib:runtarget target="tests.build.start.run.stop" />
+			<echo message="Tests ${tests.results}" />
+			<antcontrib:if>
+				<equals arg1="${tests.results}" arg2="pass" />
+				<then>
+					<antcontrib:var name="tests.results" unset="true" />
+					<antcontrib:var name="default.cfengine" value="acf" />
+					<antcontrib:runtarget target="tests.build.start.run.stop" />
+					<echo message="Tests ${tests.results}" />
+					<antcontrib:if>
+						<equals arg1="${tests.results}" arg2="pass" />
+						<then>
+							<git command="push" dir="../">
+								<args>
+									<arg value="origin" />
+									<arg value="master" />
+								</args>
+							</git>
+						</then>
+						<else>
+							<echo message="tests failed, not pushing to origin master" />
+						</else>
+					</antcontrib:if>
+				</then>
+				<else>
+					<echo message="tests failed, not pushing to origin master" />
+				</else>
+			</antcontrib:if>
+		</sequential>
+	</target>
+
 	<target name="diff.with.svn">
-		<diff-with-svn source="${src.dir}/cfwheels" uri="http://cfwheels.googlecode.com/svn/trunk/"/>
-	</target>	
+		<diff-with-svn source="${src.dir}/cfwheels" uri="http://cfwheels.googlecode.com/svn/trunk/" />
+	</target>
 
 
 	<target name="data.import">
 		<property name="build.type" value="localdev" />
 		<!--
-		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
-		-->
-		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
-	</target>	
+			http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
+			-->
+		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml" />
+	</target>
 
 	<target name="data.export">
 		<property name="build.type" value="localdev" />
 		<!--
-		http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
-		-->
-		<export-dsn dsn="wheelstestdb" schemafile="dsndata.localdev.xml"/>
-	</target>	
+			http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
+			-->
+		<export-dsn dsn="wheelstestdb" schemafile="dsndata.localdev.xml" />
+	</target>
 
 	<!-- these are just here for the Eclipse Ant UI ordering -->
 	<target name="build.localdev.start.launch">
 		<antcontrib:runtarget target="cfdistro.build.localdev.start.launch" />
-	</target>	
+	</target>
 
 	<target name="build.localdev.start" depends="build.localdev">
 		<antcontrib:runtarget target="runwar.start" />
-	</target>	
+	</target>
 
 	<target name="build.localdev.stop">
 		<antcontrib:runtarget target="runwar.stop" />
-	</target>	
-	
+	</target>
+
 </project>
