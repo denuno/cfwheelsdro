@@ -15,10 +15,8 @@
 	</target>
 
 	<loadproperties srcfile="build.properties" />
-	<!--
-	<import file="./cfdistro/build.xml"/>
-	 -->
-	<import file="/workspace/cfdistro/src/cfdistro/build.xml" />
+
+	<import file="${cfdistro.build.file}"/>
 
 
 	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir">
@@ -94,13 +92,20 @@
 		already applied to git cfwheelsdro
 		<apply-patch patchUrl="${patch.url}" patchlevel="1" patchdir="${src.dir}/cfwheels/"/>
 		-->
-		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml" />
+		<antcontrib:trycatch property="foo" reference="bar">
+		<try>
+			<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml" />
+		</try>
+		<catch>
+			<echo message="could not sync wheelstestdb schema" />
+		</catch>
+		</antcontrib:trycatch>
 
 		<sequential>
 			<antcontrib:var name="build.type" value="localdev" />
 
 			<!-- we get crazy here, and test both railo and acf before pushing -->
-			<antcontrib:var name="default.cfengine" value="railo" />
+			<antcontrib:var name="default.cfengine" value="railo"  />
 			<antcontrib:runtarget target="tests.build.start.run.stop" />
 			<echo message="Tests ${tests.results}" />
 			<antcontrib:if>
@@ -108,7 +113,7 @@
 				<then>
 					<antcontrib:var name="tests.results" unset="true" />
 					<antcontrib:var name="default.cfengine" value="acf" />
-					<antcontrib:runtarget target="tests.build.start.run.stop" />
+					<antcall target="tests.build.start.run.stop" />
 					<echo message="Tests ${tests.results}" />
 					<antcontrib:if>
 						<equals arg1="${tests.results}" arg2="pass" />
@@ -141,7 +146,7 @@
 		<property name="build.type" value="localdev" />
 		<!--
 			http://db.apache.org/ddlutils/ant/org.apache.ddlutils.task.DdlToDatabaseTask.html
-			-->
+		-->
 		<dsn-schema dsn="wheelstestdb" schemafile="dsndata.localdev.xml" />
 	</target>
 
