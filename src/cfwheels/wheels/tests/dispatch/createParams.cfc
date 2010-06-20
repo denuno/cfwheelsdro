@@ -102,20 +102,16 @@
 			assert('loc.params.user[1].config[2].isValid eq false');
 		</cfscript>
 	</cffunction>
-
-	<cffunction name="test_multipart" access="remote">
-		<cfhttp url="http://#cgi.SERVER_NAME#:#cgi.SERVER_PORT#/#getContextRoot()#/index.cfm?controller=wheels&action=wheels&view=tests&type=core" method="post">
-			<cfhttpparam type="file" name="file_field" file="#getTemplatePath()#" />
-			<cfhttpparam type="file" name="file_field" file="#getTemplatePath()#" />
-			<cfhttpparam type="formfield" name="form_field" value="funtimes" />
-			<cfhttpparam type="formfield" name="form_field" value="funtimes" />
-		</cfhttp>
-		<cfwddx action="wddx2cfml" input="#cfhttp.FileContent#" output="loc.params">
-		<cfscript>
-			assert('IsStruct(loc.params) eq true');
-			assert('IsArray(loc.params.form_field) eq true');
-			assert('IsArray(loc.params.file_field) eq true');
-		</cfscript> 
+	
+	<cffunction name="test_dates_not_combined">
+		<cfset loc.args.formScope["obj[published-day]"] = 30>
+		<cfset loc.args.formScope["obj[published-year]"] = 2000>
+		<cfset loc.params = loc.dispatch.$createParams(argumentCollection=loc.args)>
+		<cfset halt(false, 'loc.params')>
+		<cfset assert('structkeyexists(loc.params.obj, "published-day")')>
+		<cfset assert('structkeyexists(loc.params.obj, "published-year")')>
+		<cfset assert('loc.params.obj["published-day"] eq 30')>
+		<cfset assert('loc.params.obj["published-year"] eq 2000')>
 	</cffunction>
 
 </cfcomponent>

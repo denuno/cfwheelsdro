@@ -128,6 +128,97 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
+<cffunction name="columns" returntype="array" access="public" output="false" hint="Returns an array of columns names for the table associated with this class."
+	examples=
+	'
+		<!--- Get the columns names in the order they are in the database --->
+		<cfset anEmployee = model("employee").columns()>
+	'
+	categories="model-object,miscellaneous" chapters="" functions="">
+	<cfreturn ListToArray(variables.wheels.class.columnList) />
+</cffunction>
+
+<cffunction name="hasProperty" returntype="boolean" access="public" output="false" hint="Returns `true` if the specified property exists on the model."
+	examples=
+	'
+		<!--- Get an object, set a value and then see if the property exists --->
+		<cfset anEmployee = model("employee").new()>
+		<cfset anEmployee.firstName = "dude">
+		<cfset anEmployee.hasProperty("firstName")><!--- returns true --->
+		
+		<!--- this is also a dynamic method so you could do --->
+		<cfset anEmployee.hasFirstName()>
+	'
+	categories="model-object,miscellaneous" chapters="" functions="">
+	<cfargument name="property" type="string" required="true" />
+	<cfscript>
+		var hasProperty = false;
+		if (StructKeyExists(this, arguments.property))
+			hasProperty = true;
+	</cfscript>
+	<cfreturn hasProperty />
+</cffunction>
+
+<cffunction name="propertyIsPresent" returntype="boolean" access="public" output="false" hint="Returns `true` if the specified property exists on the model and is not a blank string."
+	examples=
+	'
+		<!--- Get an object, set a value and then see if the property exists --->
+		<cfset anEmployee = model("employee").new()>
+		<cfset anEmployee.firstName = "dude">
+		<cfset anEmployee.propertyIsPresent("firstName")><!--- returns true --->
+	'
+	categories="model-object,miscellaneous" chapters="" functions="">
+	<cfargument name="property" type="string" required="true" />
+	<cfscript>
+		var isPresent = false;
+		if (StructKeyExists(this, arguments.property) && Len(this[arguments.property]))
+			isPresent = true;
+	</cfscript>
+	<cfreturn isPresent />
+</cffunction>
+
+<cffunction name="columnForProperty" returntype="any" access="public" output="false" hint="Returns the column object for the named attribute."
+	examples=
+	'
+		<!--- Get an object, set a value and then see if the property exists --->
+		<cfset anEmployee = model("employee").new()>
+		<cfset anEmployee.columnForProperty("firstName")><!--- returns column name, in this case "firstname" --->
+	'
+	categories="model-object,miscellaneous" chapters="" functions="">
+	<cfargument name="property" type="string" required="true" />
+	<cfscript>
+		var columnName = false;
+		if (StructKeyExists(variables.wheels.class.properties, arguments.property))
+			columnName = variables.wheels.class.properties[arguments.property].column;
+	</cfscript>
+	<cfreturn columnName />
+</cffunction>
+
+<cffunction name="toggle" returntype="any" access="public" output="false" hint="Assigns to the property specified the opposite of the properties current boolean value. Throws an error if the property cannot be converted to a boolean value. Returns this object if save is false."
+	examples=
+	'
+		<!--- Get an object, and toggle a boolean property --->
+		<cfset user = model("user").findByKey(58)>
+		<cfset user.toggle("isActive")><!--- returns whether the object was saved properly --->
+		<!--- you can also use a dynamic helper for this --->
+		<cfset user.toggleIsActive()>
+	'
+	categories="model-object,miscellaneous" chapters="" functions="">
+	<cfargument name="property" type="string" required="true" />
+	<cfargument name="save" type="boolean" required="false" hint="Argument to decide whether save the property after it has been toggled. Defaults to true." />
+	<cfscript>
+		$insertDefaults(name="toggle", input=arguments);
+		if (!StructKeyExists(this, arguments.property))
+			$throw(type="Wheels.PropertyDoesNotExist", message="Property Does Not Exist", extendedInfo="You may only toggle a property that exists on this model.");
+		if (!IsBoolean(this[arguments.property]))
+			$throw(type="Wheels.PropertyIsIncorrectType", message="Incorrect Arguments", extendedInfo="You may only toggle a property that evaluates to the boolean value.");
+		this[arguments.property] = !this[arguments.property];	
+		if (arguments.save)
+			return updateProperty(property=arguments.property, value=this[arguments.property]);
+	</cfscript>	
+	<cfreturn this />
+</cffunction>
+
 <cffunction name="properties" returntype="struct" access="public" output="false" hint="Returns a structure of all the properties with their names as keys and the values of the property as values."
 	examples=
 	'
@@ -193,12 +284,24 @@
 	<cfargument name="property" type="string" required="false" default="" hint="Name of property to check for change.">
 	<cfscript>
 		var loc = {};
-		loc.returnValue = false;
+		
+		// always return true if $persistedProperties does not exists
+		if (!StructKeyExists(variables, "$persistedProperties"))
+			return true; 
+		
 		for (loc.key in variables.wheels.class.properties)
-			if (!StructKeyExists(variables, "$persistedProperties") || (StructKeyExists(this, loc.key) && StructKeyExists(variables.$persistedProperties, loc.key) && Compare(this[loc.key], variables.$persistedProperties[loc.key])) && (!Len(arguments.property) || loc.key == arguments.property))
-				loc.returnValue = true;
+		{
+			// return true if we have the key on this and not in variables.$persistedProperties
+			if (StructKeyExists(this, loc.key) && !StructKeyExists(variables.$persistedProperties, loc.key) && (!Len(arguments.property) || loc.key == arguments.property))
+				return true;
+			// return true if the compare() fails
+			else if ((StructKeyExists(this, loc.key) && StructKeyExists(variables.$persistedProperties, loc.key) && Compare(this[loc.key], variables.$persistedProperties[loc.key])) && (!Len(arguments.property) || loc.key == arguments.property)) 
+				return true;
+		}
+		// if we get here, it means that all of the properties that were checked had a value in 
+		// $persistedProperties and it matched or some of the properties did not exist in the this scope
 	</cfscript>
-	<cfreturn loc.returnValue>
+	<cfreturn false>
 </cffunction>
 
 <cffunction name="changedProperties" returntype="string" access="public" output="false" hint="Returns a list of the object properties that have been changed but not yet saved to the database."
@@ -319,9 +422,13 @@
 	<cfargument name="value" type="any" required="true" />
 	<cfargument name="associations" type="struct" required="false" default="#variables.wheels.class.associations#" />
 	<cfscript>
-		if (IsStruct(arguments.value) && StructKeyExists(arguments.associations, arguments.property) && arguments.associations[arguments.property].nested.allow && ListFindNoCase("belongsTo,hasOne", arguments.associations[arguments.property].type))
+		if (IsObject(arguments.value))
+			this[arguments.property] = arguments.value;
+		else if (IsStruct(arguments.value) && StructKeyExists(arguments.associations, arguments.property) && arguments.associations[arguments.property].nested.allow && ListFindNoCase("belongsTo,hasOne", arguments.associations[arguments.property].type))
 			$setOneToOneAssociationProperty(property=arguments.property, value=arguments.value, association=arguments.associations[arguments.property]);
-		else if ((IsStruct(arguments.value) || IsArray(arguments.value)) && StructKeyExists(arguments.associations, arguments.property) && arguments.associations[arguments.property].nested.allow && arguments.associations[arguments.property].type == "hasMany")
+		else if (IsStruct(arguments.value) && StructKeyExists(arguments.associations, arguments.property) && arguments.associations[arguments.property].nested.allow && arguments.associations[arguments.property].type == "hasMany")
+			$setCollectionAssociationProperty(property=arguments.property, value=arguments.value, association=arguments.associations[arguments.property]);
+		else if (IsArray(arguments.value) && ArrayLen(arguments.value) && !IsObject(arguments.value[1]) && StructKeyExists(arguments.associations, arguments.property) && arguments.associations[arguments.property].nested.allow && arguments.associations[arguments.property].type == "hasMany")
 			$setCollectionAssociationProperty(property=arguments.property, value=arguments.value, association=arguments.associations[arguments.property]);
 		else
 			this[arguments.property] = arguments.value;
@@ -361,4 +468,9 @@
 			returnValue = variables.wheels.class.properties[arguments.property];
 	</cfscript>
 	<cfreturn returnValue />
+</cffunction>
+
+<cffunction name="$label" returntype="string" access="public" output="false">
+	<cfargument name="property" type="string" required="true">
+	<cfreturn variables.wheels.class.properties[arguments.property].label>
 </cffunction>

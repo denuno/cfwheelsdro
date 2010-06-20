@@ -122,6 +122,58 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
+<cffunction name="buttonTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a button `form` control."
+	examples=
+	'
+		<!--- view code --->
+		<cfoutput>
+		    ##startFormTag(action="something")##
+		        <!--- form controls go here --->
+		        ##buttonTag(content="Submit this form", value="save")##
+		    ##endFormTag()##
+		</cfoutput>
+	'
+	categories="view-helper,forms-general" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
+	<cfargument name="content" type="string" required="false" hint="Content to the user inside the button.">
+	<cfargument name="type" type="string" required="false" hint="The type for the button: button, reset, submit.">
+	<cfargument name="image" type="string" required="false" hint="File name of the image file to use in the button form control.">
+	<cfargument name="value" type="string" required="false" hint="The value of the button when submitted.">
+	<cfargument name="disable" type="any" required="false" hint="Whether to disable the button upon clicking (prevents double-clicking).">
+	<cfscript>
+		var loc = {};
+		$insertDefaults(name="buttonTag", input=arguments);
+
+		if (Len(arguments.disable))
+		{
+			loc.onclick = "this.disabled=true;";
+			if (!Len(arguments.image) && !IsBoolean(arguments.disable))
+				loc.onclick = loc.onclick & "this.value='#JSStringFormat(arguments.disable)#';";
+			loc.onclick = loc.onclick & "this.form.submit();";
+			arguments.onclick = $addToJavaScriptAttribute(name="onclick", content=loc.onclick, attributes=arguments);
+		}
+
+		if (Len(arguments.image))
+		{
+			// if image is specified then use that as the content
+			loc.args = {};
+			loc.args.type = "image";
+			loc.args.source = arguments.image;
+			arguments.content = imageTag(argumentCollection=loc.args);
+		}
+
+		// save content and delete argument
+		loc.content = arguments.content;
+		StructDelete(arguments, "content", false);
+		// remove image argument
+		StructDelete(arguments, "image");
+		// remove disabled argument
+		StructDelete(arguments, "disable");
+		// create the buttom
+		loc.returnValue = $element(name="button", content="#loc.content#", attributes="#arguments#");
+	</cfscript>
+	<cfreturn loc.returnValue>
+</cffunction>
+
 <cffunction name="$formValue" returntype="string" access="public" output="false">
 	<cfargument name="objectName" type="any" required="true">
 	<cfargument name="property" type="string" required="true">
@@ -153,22 +205,22 @@
 	<cfargument name="property" type="string" required="true">
 	<cfscript>
 		var loc = {};
-		
+
 		// if the developer passed in a maxlength value, use it
 		if (StructKeyExists(arguments, "maxlength"))
 			return arguments.maxlength;
-		
-		// explicity return void so the property does not get set	
+
+		// explicity return void so the property does not get set
 		if (IsStruct(arguments.objectName))
 			return;
-			
+
 		loc.object = $getObject(arguments.objectName);
-		
+
 		// if objectName does not represent an object, explicity return void so the property does not get set
 		if (not IsObject(loc.object))
 			return;
-			
-		loc.propertyInfo = loc.object.$propertyInfo(arguments.property);	
+
+		loc.propertyInfo = loc.object.$propertyInfo(arguments.property);
 		if (StructCount(loc.propertyInfo) and ListFindNoCase("cf_sql_char,cf_sql_varchar", loc.propertyInfo.type))
 			return loc.propertyInfo.size;
 	</cfscript>
@@ -203,7 +255,7 @@
 		loc.returnValue = arguments.prependToLabel;
 		loc.attributes = {};
 		for (loc.key in arguments)
-			if (Left(loc.key, 5) == "label" && Len(loc.key) > 5 && loc.key != "labelPlacement")
+			if (Left(loc.key, 5) == "label" && Len(loc.key) gt 5 && loc.key != "labelPlacement")
 				loc.attributes[Replace(loc.key, "label", "")] = arguments[loc.key];
 		if (StructKeyExists(arguments, "id"))
 			loc.attributes.for = arguments.id;
@@ -217,7 +269,7 @@
 <cffunction name="$formBeforeElement" returntype="string" access="public" output="false">
 	<cfargument name="objectName" type="any" required="true">
 	<cfargument name="property" type="string" required="true">
-	<cfargument name="label" type="string" required="true">
+	<cfargument name="label" type="any" required="true">
 	<cfargument name="labelPlacement" type="string" required="true">
 	<cfargument name="prepend" type="string" required="true">
 	<cfargument name="append" type="string" required="true">
@@ -229,6 +281,7 @@
 		loc.returnValue = "";
 		if ($formHasError(argumentCollection=arguments) and Len(arguments.errorElement))
 			loc.returnValue = loc.returnValue & $tag(name=arguments.errorElement, class="field-with-errors");
+		arguments.label = $getFieldLabel(argumentCollection=arguments);
 		if (Len(arguments.label) && arguments.labelPlacement != "after")
 		{
 			loc.returnValue = loc.returnValue & $createLabel(argumentCollection=arguments);
@@ -256,6 +309,7 @@
 	<cfscript>
 		var loc = {};
 		loc.returnValue = arguments.append;
+		arguments.label = $getFieldLabel(argumentCollection=arguments);
 		if (Len(arguments.label) && arguments.labelPlacement != "before")
 		{
 			if (arguments.labelPlacement == "after")
@@ -268,4 +322,25 @@
 			loc.returnValue = loc.returnValue & "</" & arguments.errorElement & ">";
 	</cfscript>
 	<cfreturn loc.returnValue>
+</cffunction>
+
+<cffunction name="$getFieldLabel" returntype="string" access="public" output="false">
+	<cfargument name="objectName" type="any" required="true">
+	<cfargument name="property" type="string" required="true">
+	<cfargument name="label" type="string" required="true">
+	<cfscript>
+		var loc = {};
+		if (arguments.label eq false)
+			return "";
+		if (arguments.label eq true and !IsStruct(arguments.objectName))
+		{
+			if (IsObject(arguments.objectName))
+				loc.object = arguments.objectName;
+			else
+				loc.object = $getObject(arguments.objectName);
+			if (IsObject(loc.object))
+				return loc.object.$label(arguments.property);
+		}
+		return arguments.label;
+	</cfscript>
 </cffunction>

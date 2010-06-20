@@ -17,7 +17,10 @@
 		variables.wheels.class.callbacks = {};
 		variables.wheels.class.keys = "";
 		variables.wheels.class.connection = {datasource=application.wheels.dataSourceName, username=application.wheels.dataSourceUserName, password=application.wheels.dataSourcePassword};
-		variables.wheels.class.setDefaultValidations = application.wheels.setDefaultValidations;
+		variables.wheels.class.automaticValidations = application.wheels.automaticValidations;
+
+		setTableNamePrefix(get("tableNamePrefix"));
+		table(LCase(pluralize(variables.wheels.class.modelName)));
 
 		loc.callbacks = "afterNew,afterFind,afterInitialization,beforeDelete,afterDelete,beforeSave,afterSave,beforeCreate,afterCreate,beforeUpdate,afterUpdate,beforeValidation,afterValidation,beforeValidationOnCreate,afterValidationOnCreate,beforeValidationOnUpdate,afterValidationOnUpdate";
 		loc.iEnd = ListLen(loc.callbacks);
@@ -33,18 +36,10 @@
 			init();
 
 		// load the database adapter
-		variables.wheels.class.adapter = createobject("component", "wheelsMapping.Connection").init(datasource=application.wheels.dataSourceName, username=application.wheels.dataSourceUserName, password=application.wheels.dataSourcePassword);
-
-		// set the table name unless set manually by the developer
-		if (!StructKeyExists(variables.wheels.class, "tableName"))
-		{
-			variables.wheels.class.tableName = LCase(pluralize(variables.wheels.class.modelName));
-			if (Len(application.wheels.tableNamePrefix))
-				variables.wheels.class.tableName = application.wheels.tableNamePrefix & "_" & variables.wheels.class.tableName;
-		}
+		variables.wheels.class.adapter = $createObjectFromRoot(path="#application.wheels.wheelsComponentPath#", fileName="Connection", method="init", datasource="#application.wheels.dataSourceName#", username="#application.wheels.dataSourceUserName#", password="#application.wheels.dataSourcePassword#");
 
 		// get columns for the table
-		loc.columns = variables.wheels.class.adapter.$getColumns(variables.wheels.class.tableName);
+		loc.columns = variables.wheels.class.adapter.$getColumns(tableName());
 
 		variables.wheels.class.propertyList = "";
 		variables.wheels.class.columnList = "";
@@ -69,6 +64,7 @@
 
 				// set the info we need for each property
 				variables.wheels.class.properties[loc.property] = {};
+				variables.wheels.class.properties[loc.property].dataType = loc.type;
 				variables.wheels.class.properties[loc.property].type = variables.wheels.class.adapter.$getType(loc.type);
 				variables.wheels.class.properties[loc.property].column = loc.columns["column_name"][loc.i];
 				variables.wheels.class.properties[loc.property].scale = loc.columns["decimal_digits"][loc.i];
@@ -89,7 +85,7 @@
 				{
 					setPrimaryKey(loc.property);
 				}
-				else if (variables.wheels.class.setDefaultValidations and not ListFindNoCase("#application.wheels.timeStampOnCreateProperty#,#application.wheels.timeStampOnUpdateProperty#,#application.wheels.softDeleteProperty#", loc.property))
+				else if (variables.wheels.class.automaticValidations and not ListFindNoCase("#application.wheels.timeStampOnCreateProperty#,#application.wheels.timeStampOnUpdateProperty#,#application.wheels.softDeleteProperty#", loc.property))
 				{
 					// set nullable validations if the developer has not
 					loc.defaultValidationsAllowBlank = false;

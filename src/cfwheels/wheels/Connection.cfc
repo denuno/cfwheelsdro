@@ -3,8 +3,8 @@
 
 	<cffunction name="init" access="public" returntype="any" output="false">
 		<cfargument name="datasource" type="string" required="true">
-		<cfargument name="username" type="string" required="true">
-		<cfargument name="password" type="string" required="true">
+		<cfargument name="username" type="string" required="false" default="">
+		<cfargument name="password" type="string" required="false" default="">
 		<cfset variables.instance.connection = arguments>
 		<cfreturn $assignAdapter()>
 	</cffunction>
@@ -33,7 +33,7 @@
 
 			if (loc.info.driver_name Contains "SQLServer" || loc.info.driver_name Contains "Microsoft SQL Server")
 				loc.adapterName = "MicrosoftSQLServer";
-			else if (loc.info.driver_name Contains "MySQL" || loc.info.driver_name Contains "H2 JDBC Driver")
+			else if (loc.info.driver_name Contains "MySQL")
 				loc.adapterName = "MySQL";
 			else if (loc.info.driver_name Contains "Oracle")
 				loc.adapterName = "Oracle";

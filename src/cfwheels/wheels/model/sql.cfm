@@ -5,13 +5,13 @@
 		var loc = {};
 		if (variables.wheels.class.softDeletion && arguments.softDelete)
 		{
-			ArrayAppend(arguments.sql, "UPDATE #variables.wheels.class.tableName# SET #variables.wheels.class.softDeleteColumn# = ");
+			ArrayAppend(arguments.sql, "UPDATE #tableName()# SET #variables.wheels.class.softDeleteColumn# = ");
 			loc.param = {value=Now(), type="cf_sql_timestamp"};
 			ArrayAppend(arguments.sql, loc.param);
 		}
 		else
 		{
-			ArrayAppend(arguments.sql, "DELETE FROM #variables.wheels.class.tableName#");
+			ArrayAppend(arguments.sql, "DELETE FROM #tableName()#");
 		}
 	</cfscript>
 	<cfreturn arguments.sql>
@@ -58,7 +58,7 @@
 				loc.null = false;
 			else
 				loc.null = true;
-			loc.param = {value=loc.value, type=variables.wheels.class.properties[loc.key].type, scale=variables.wheels.class.properties[loc.key].scale, null=loc.null};
+			loc.param = {value=loc.value, type=variables.wheels.class.properties[loc.key].type, dataType=variables.wheels.class.properties[loc.key].dataType, scale=variables.wheels.class.properties[loc.key].scale, null=loc.null};
 			ArrayAppend(arguments.sql, loc.param);
 			if (loc.i < loc.iEnd)
 				ArrayAppend(arguments.sql, " AND ");
@@ -144,16 +144,17 @@
 	<cfargument name="include" type="string" required="true">
 	<cfargument name="group" type="string" required="true">
 	<cfargument name="distinct" type="boolean" required="true">
+	<cfargument name="returnAs" type="string" required="true">
 	<cfscript>
 		var loc = { group = "" };
 		// if we want a distinct statement, we can do it grouping every field in the select
 		if (arguments.distinct)
 		{
-			loc.group = $createSQLFieldList(list=arguments.select, include=arguments.include, renameFields=false, addCalculatedProperties=false);
+			loc.group = $createSQLFieldList(list=arguments.select, include=arguments.include, returnAs=arguments.returnAs, renameFields=false, addCalculatedProperties=false);
 		}
 		else if (Len(arguments.group))
 		{
-			loc.group = $createSQLFieldList(list=arguments.group, include=arguments.include, renameFields=false, addCalculatedProperties=false);
+			loc.group = $createSQLFieldList(list=arguments.group, include=arguments.include, returnAs=arguments.returnAs, renameFields=false, addCalculatedProperties=false);
 		}
 		if (Len(loc.group))
 		{
@@ -168,9 +169,10 @@
 	<cfargument name="sql" type="array" required="true">
 	<cfargument name="select" type="string" required="true">
 	<cfargument name="include" type="string" required="true">
+	<cfargument name="returnAs" type="string" required="true">
 	<cfscript>
 		var loc = {};
-		loc.select = $createSQLFieldList(list=arguments.select, include=arguments.include);
+		loc.select = $createSQLFieldList(list=arguments.select, include=arguments.include, returnAs=arguments.returnAs);
 		loc.select = "SELECT " & loc.select;
 		ArrayAppend(arguments.sql, loc.select);
 	</cfscript>
@@ -180,8 +182,10 @@
 <cffunction name="$createSQLFieldList" returntype="string" access="public" output="false">
 	<cfargument name="list" type="string" required="true">
 	<cfargument name="include" type="string" required="true">
+	<cfargument name="returnAs" type="string" required="true">
 	<cfargument name="renameFields" type="boolean" required="false" default="true">
 	<cfargument name="addCalculatedProperties" type="boolean" required="false" default="true">
+	<cfargument name="useExpandedColumnAliases" type="boolean" required="false" default="#application.wheels.useExpandedColumnAliases#">
 	<cfscript>
 		var loc = {};
 		// setup an array containing class info for current class and all the ones that should be included
@@ -238,7 +242,29 @@
 					if ((ListFindNoCase(loc.classData.propertyList, loc.iItem) || ListFindNoCase(loc.classData.calculatedPropertyList, loc.iItem)) && !ListFindNoCase(loc.addedPropertiesByModel[loc.classData.modelName], loc.iItem))
 					{
 						// if expanded column aliases is enabled then mark all columns from included classes as duplicates in order to prepend them with their class name
-						if ((application.wheels.useExpandedColumnAliases && loc.j gt 1 or loc.duplicateCount) && arguments.renameFields)
+						loc.flagAsDuplicate = false;
+						if (arguments.renameFields)
+						{
+							if (loc.duplicateCount)
+							{
+								// always flag as a duplicate when a property with this name has already been added
+								loc.flagAsDuplicate  = true;
+							}
+							else if (loc.j > 1)
+							{
+								if (arguments.useExpandedColumnAliases)
+								{
+									// when on included models and using the new setting we flag every property as a duplicate so that the model name always gets prepended
+									loc.flagAsDuplicate  = true;
+								}
+								else if (!arguments.useExpandedColumnAliases && arguments.returnAs != "query")
+								{
+									// with the old setting we only do it when we're returning object(s) since when creating instances on none base models we need the model name prepended
+									loc.flagAsDuplicate  = true;
+								}
+							}
+						}						
+						if (loc.flagAsDuplicate )
 							loc.toAppend = loc.toAppend & "[[duplicate]]" & loc.j;
 						if (ListFindNoCase(loc.classData.propertyList, loc.iItem))
 						{
@@ -373,6 +399,7 @@
 							if (ListFindNoCase(loc.classData.propertyList, ListLast(loc.param.property, ".")))
 							{
 								loc.param.type = loc.classData.properties[ListLast(loc.param.property, ".")].type;
+								loc.param.dataType = loc.classData.properties[ListLast(loc.param.property, ".")].dataType;
 								loc.param.scale = loc.classData.properties[ListLast(loc.param.property, ".")].scale;
 								loc.param.column = loc.classData.tableName & "." & loc.classData.properties[ListLast(loc.param.property, ".")].column;
 								break;
@@ -380,6 +407,7 @@
 							else if (ListFindNoCase(loc.classData.calculatedPropertyList, ListLast(loc.param.property, ".")))
 							{
 								loc.param.type = "CF_SQL_CHAR";
+								loc.param.dataType = "char";
 								loc.param.scale = 0;
 								loc.param.column = loc.classData.calculatedProperties[ListLast(loc.param.property, ".")].sql;
 								break;
@@ -407,7 +435,7 @@
 				{
 					loc.column = loc.params[loc.i].column;
 					ArrayAppend(arguments.sql, "#loc.column# #loc.params[loc.i].operator#");
-					loc.param = {type=loc.params[loc.i].type, scale=loc.params[loc.i].scale};
+					loc.param = {type=loc.params[loc.i].type, dataType=loc.params[loc.i].dataType, scale=loc.params[loc.i].scale};
 					ArrayAppend(arguments.sql, loc.param);
 				}
 			}
@@ -540,13 +568,13 @@
 		loc.pos = 1;
 		for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 		{
-			// look for the next delimiter in the string and set it
-			loc.delimPos = FindOneOf("(),", loc.include, loc.pos);
-			loc.delimChar = Mid(loc.include, loc.delimPos, 1);
+			// look for the next delimiter sequence in the string and set it (can be single delims or a chain, e.g ',' or ')),'
+			loc.delimFind = ReFind("[(\(|\)|,)]+", loc.include, loc.pos, true);
+			loc.delimSequence = Mid(loc.include, loc.delimFind.pos[1], loc.delimFind.len[1]);
 
 			// set current association name and set new position to start search in the next loop
-			loc.name = Mid(loc.include, loc.pos, loc.delimPos-loc.pos);
-			loc.pos = REFindNoCase("[a-z]", loc.include, loc.delimPos);
+			loc.name = Mid(loc.include, loc.pos, loc.delimFind.pos[1]-loc.pos);
+			loc.pos = REFindNoCase("[a-z]", loc.include, loc.delimFind.pos[1]);
 
 			// create a reference to current class in include string and get its association info
 			loc.class = model(ListLast(loc.levels));
@@ -613,11 +641,15 @@
 				loc.classAssociations[loc.name].join = loc.join & Replace(loc.toAppend, ",", " AND ", "all");
 			}
 
-			// go up or down one level in the association tree
-			if (loc.delimChar == "(")
-				loc.levels = ListAppend(loc.levels, loc.classAssociations[loc.name].modelName);
-			else if (loc.delimChar == ")")
-				loc.levels = ListDeleteAt(loc.levels, ListLen(loc.levels));
+			// loop over each character in the delimiter sequence and move up/down the levels as appropriate
+			for (loc.x=1; loc.x lte Len(loc.delimSequence); loc.x++)
+			{
+				loc.delimChar = Mid(loc.delimSequence, loc.x, 1);
+				if (loc.delimChar == "(")
+					loc.levels = ListAppend(loc.levels, loc.classAssociations[loc.name].modelName);
+				else if (loc.delimChar == ")")
+					loc.levels = ListDeleteAt(loc.levels, ListLen(loc.levels));
+			}
 
 			// add info to the array that we will return
 			ArrayAppend(loc.returnValue, loc.classAssociations[loc.name]);

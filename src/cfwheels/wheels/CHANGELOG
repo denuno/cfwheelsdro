@@ -15,44 +15,44 @@ Changes
 	
 	* Prepend included model properties with their class name in queries - #442 [Andy Bellenie]
 	
-	* support for default validations - [James Gibson, Andy Bellenie, Tony Petruzzi]
+	* Support for automatic validations - [James Gibson, Andy Bellenie, Tony Petruzzi]
 	
-		- configured by calling set(setDefaultValidations=true) in your environments settings.cfm
+		- configured by calling set(automaticValidations=true) in your environment's settings.cfm
 	
-		updates to model initialization to create default validations for fields. The
-		validations include:
+		updates model initialization to automatically add validation to properties based on your database configuration. 
+		The validations include:
 		
 		- validatesPresenceOf for fields that are nullable=false
 		- validatesLengthOf for string fields (cf_sql_char & cf_sql_varchar)
-		- validtesNumericalityOf for numeric fields, it integer is set correctly for the
+		- validatesNumericalityOf for numeric fields, it integer is set correctly for the
 		field type also.
 		
-		There is a new setting "setDefaultValidations" which is checked before setting
-		any validations. Also, no default validations are applied to primary key fields
-		or to fields for which the validation has already been set.
+		There is a new setting "automaticValidations" which is checked before setting
+		any validations. Also, no automatic validations are applied to primary key fields
+		or to fields for which a custom validation has already been set.
 		
-		default validations can also be turned off on a per model basis by using the
-		setDefaultValidations(false) in the model's init() method.
+		automatic validations can also be turned off on a per model basis by using the
+		automaticValidations(false) in the model's init() method.
 		
-	* updated findAll() to allow for more than one association as long as they are direct. - [James Gibson]
+	* Updated findAll() to allow for more than one association as long as they are direct. - [James Gibson]
 	
 		This means that you can do an include like include="objects,someotherobject" but not
 		include="object(someotherobject)"
 		
-	* update to wheels to add GROUP BY functionality - [James Gibson]
+	* Update to wheels to add GROUP BY functionality - [James Gibson]
 	
-	* added accessibleproperties() and protectedproperties() to protect model variables from masss assignment - [James Gibson]
+	* Added accessibleproperties() and protectedproperties() to protect model variables from masss assignment - [James Gibson]
 	
-	* update to $create() to timestamp the updatedAt column if it exists - [James Gibson]
+	* Update to $create() to timestamp the updatedAt column if it exists - [James Gibson]
 
-	* allow views to be used as models - #390 [Tony Petruzzi]
+	* Allow views to be used as models - #390 [Tony Petruzzi]
 	
 		to do this, you must use setPrimaryKey() in your model's init method to tell
 		Wheels what column(s) in the view it should use for the primary key(s)
 		
 		<cfset setPrimaryKey("column1,column2")>
 		
-	* allow for nested attributes - [James Gibson]
+	* Allow for nested attributes - [James Gibson]
 	
 	* Adds transaction handling support - [Andy Bellenie]
 
@@ -68,7 +68,7 @@ Changes
 	
 	* Added directory and deleteFile arguments to sendFile() - #323 [Tony Petruzzi]
 	
-	* support for onMissingMethod() method - [James Gibson]
+	* Support for onMissingMethod() method - [James Gibson]
 	
 	* Ability to pass in arguments to filters. - [Per Djurner]
 	
@@ -90,7 +90,7 @@ Changes
 	
 	* Added "head" argument to styleSheetLinkTag and javaScriptIncludeTag - [Per Djurner]
 	
-	* support for assetQueryString - [James Gibson]
+	* Support for assetQueryString - [James Gibson]
 	
 		- configured by calling set(assetQueryString=true) in your environments settings.cfm
 	    - defaults to false for design & development
@@ -109,37 +109,37 @@ Changes
 	
 	* Updates checkBoxTag() and checkBox() to allow for unchecked value - [James Gibson]
 	
-	* addition of new form helpers to easily add checkboxes and radio buttons to hasMany relationships on a model. - [James Gibson]
+	* Addition of new form helpers to easily add checkboxes and radio buttons to hasMany relationships on a model. - [James Gibson]
 
 		hasManyRadioButton(): used to output radio buttons for a relationship on a model
 		hasManyCheckBox(): used to output a checkbox for a relationship on a model
-
-	* Add width/height arguments to imageTag() - #328 [Andy Bellenie]
+		
+	* Added buttonTag() form helper - [Tony Petruzzi]
 
 [Application]
 
-	* method: addDefaultRoutes() - [Per Djurner]
+	* Method: addDefaultRoutes() - [Per Djurner]
 		
 		Adds the default Wheels routes to your application. Only use this method if you have set `loadDefaultRoutes` to `false`
 		and want to control exactly where in the route order you want to place the default routes.
 		
-	* setting: setDefaultValidations
+	* Setting: automaticValidations
 	
-		Used to globally turn on/off default validations in model
+		Used to globally turn on/off automatic validations in model
 		
-	* allow plugins in maintenance mode - [James Gibson]
+	* Allow plugins in maintenance mode - [James Gibson]
 	
-	* setting: defaults for truncate and wordTruncate - [James Gibson]
+	* Setting: defaults for truncate and wordTruncate - [James Gibson]
 	
-	* setting: setUpdatedAtOnCreate - [James Gibson]
+	* Setting: setUpdatedAtOnCreate - [James Gibson]
 	
 		tells wheels if it should update the updatedAt property on create
 		
-	* setting: errorEmailSubject - #392 [Per Djurner]
+	* Setting: errorEmailSubject - #392 [Per Djurner]
 	
 		allow customizing error email subject
 		
-	* setting: deletePluginDirectories - #385 [Per Djurner]
+	* Setting: deletePluginDirectories - #385 [Per Djurner]
 	
 		tell wheels whether to delete plugin directories if no corresponding plugin zip file exists
 		
@@ -149,7 +149,7 @@ Changes
 		
 [Core]
 
-	* added toXHTML() - [Tony Petruzzi]
+	* Added toXHTML() - [Tony Petruzzi]
 	
 		returns an XHTML compliant string
 	
@@ -180,6 +180,27 @@ Bug Fixes
 * Fixed the handling for the "errorEmailServer" setting so that error emails can now be sent without having to set the server in the ColdFusion administrator - [Per Djurner]
 * Corrected pluralize rules - #450 [Joshua Clingenpeel, Tony Petruzzi]
 * Remove possible spaces in list passed in to callback registration - #448 [Raul Riera]
+* Check to see that a function has a declaration in the settings before setting defaults - [James Gibson]
+* Update to capitalize() to return nothing if the passed in string is empty - [James Gibson]
+* validatesPresenceOf() now takes whitespace into account - [Tony Petruzzi]
+* Fix for lock timeouts occurring during race conditions in the "design" and "development" modes - #467 [John C. Bland II, Andy Bellenie, Tony Petruzzi]
+* Fix so Wheels uses passed in width/height in imageTag() when only one of them is passed in - #328 [Andy Bellenie, Per Djurner]
+* Don't append .css, .js to asset files when they end in .cfm - [Tony Petruzzi]
+* Update to reload to catch the query blank boolean error - [James Gibson]
+* onCreate validations do not run when onSave validations fail - #455 [Andy Bellenie]
+* Fixes bug with nullable foreign keys in where clause - [Andy Bellenie]
+* Update to clean up variables from all scopes after running plugin injection - [James Gibson]
+* Updated PostgreSQL types - [Jaroslaw Krzemienski, Per Djurner]
+* Fix for race condition when checking for existing controller files in the "design" and "development" modes - #360 [Andrea Campolonghi, Per Djurner]
+* Error in SQL Server pagination with mapped columns - #456 [Don Humphreys, Tony Petruzzi]
+* Updated hasChanged() for a race condition that wasn't met - [James Gibson]
+* Fixed pagination error in Oracle when using the "include" argument - #449 [Per Djurner]
+* Fixed incorrect layout rendering for renderPartial() and includePartial() - #488 [Jordan Sitkin, Per Djurner]
+* Fix for complex "include" strings - #453 [Jordan Sitkin, Andy Bellenie]
+* Fixed naming conflict occurring for properties starting with the same name as its model on included objects - #461 [Tony Petruzzi, Per Djurner, Raul Riera]
+* Fixed pluralization issue related to partials used with object(s)/queries and removed the limitation of the file being tied to the model name - #427 [Per Djurner, James Gibson]
+* Prevent additional errors from occurring during display of CFML errors - #466 [John C. Bland II, Per Djurner, Tony Petruzzi]
+
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 

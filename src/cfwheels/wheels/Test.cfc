@@ -102,8 +102,8 @@
 	<!--- include main wheels functions in tests by default --->
 	<cfinclude template="/wheelsMapping/global/functions.cfm">
 
-	<cfset variables.WHEELS_TESTS_BASE_COMPONENT_PATH = ""> 
-	<cfset variables.ROOT_TEST_PATH = ""> 
+	<cfset variables.WHEELS_TESTS_BASE_COMPONENT_PATH = "">
+	<cfset variables.ROOT_TEST_PATH = "">
 
 	<!---
 		Called from a test function.  If expression evaluates to false,

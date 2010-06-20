@@ -31,7 +31,7 @@
 		request.cgi = $cgiScope();
 
 		// set up containers for routes, caches, settings etc
-		application.wheels.version = "1.1";
+		application.wheels.version = "1.1 Beta 1";
 		application.wheels.controllers = {};
 		application.wheels.models = {};
 		application.wheels.existingModelFiles = "";
@@ -152,7 +152,7 @@
 			loc.iEnd = ListLen(application.wheels.mixableComponents);
 			for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 			{
-				application.wheels.mixins[ListGetAt(application.wheels.mixableComponents, loc.i)] = "";
+				application.wheels.mixins[ListGetAt(application.wheels.mixableComponents, loc.i)] = {};
 			}
 			loc.iList = StructKeyList(application.wheels.plugins);
 			loc.iEnd = ListLen(loc.iList);
@@ -185,7 +185,7 @@
 								{
 									loc.kItem = ListGetAt(application.wheels.mixableComponents, loc.k);
 									if (loc.methodMixins == "global" || ListFindNoCase(loc.methodMixins, loc.kItem))
-										application.wheels.mixins[loc.kItem] = ListAppend(application.wheels.mixins[loc.kItem], loc.iItem  & "." & loc.jItem);
+										application.wheels.mixins[loc.kItem][loc.jItem] = application.wheels.plugins[loc.iItem][loc.jItem];
 								}
 							}
 						}

@@ -72,22 +72,13 @@
 		request.wheels.cacheCounts.culls = 0;
 
 		if (!application.wheels.cacheModelInitialization)
-			StructClear(application.wheels.models);
+			$simpleLock(name="modelLock", execute="$clearModelInitializationCache");
 		if (!application.wheels.cacheControllerInitialization)
-			StructClear(application.wheels.controllers);
+			$simpleLock(name="controllerLock", execute="$clearControllerInitializationCache");
 		if (!application.wheels.cacheRoutes)
 			$loadRoutes();
 		if (!application.wheels.cacheDatabaseSchema)
 			$clearCache("sql");
-		if (!application.wheels.cacheFileChecking)
-		{
-			application.wheels.existingControllerFiles = "";
-			application.wheels.nonExistingControllerFiles = "";
-			application.wheels.existingLayoutFiles = "";
-			application.wheels.nonExistingLayoutFiles = "";
-			application.wheels.existingHelperFiles = "";
-			application.wheels.nonExistingHelperFiles = "";
-		}
 		$include(template="#application.wheels.eventPath#/onrequeststart.cfm");
 		if (application.wheels.showDebugInformation)
 			$debugPoint("requestStart");
