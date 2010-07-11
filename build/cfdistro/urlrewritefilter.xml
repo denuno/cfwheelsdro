@@ -160,7 +160,7 @@
 	</macrodef>
 
 	<target name="urlrewritefilter.mappings.update">
-		<xmltask source="mappings.xml">
+		<xmltask sourcebuffer="mappings.buff">
 			<call path="mappings/*">
 				<param name="virtual" path="@virtual" default="NONE" />
 				<param name="physical" path="@physical" default="NONE" />

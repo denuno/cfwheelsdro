@@ -35,7 +35,7 @@
 				<property name="cfmlServletName" value="CfmServlet" />
 			</else>
 		</antcontrib:if>
-		<xmltask source="mappings.xml">
+		<xmltask sourcebuffer="mappings.buff">
 			<xmlcatalog refId="commonDTDs"/>
 			<call path="mappings/*">
 				<param name="virtual" path="@virtual" default="NONE" />

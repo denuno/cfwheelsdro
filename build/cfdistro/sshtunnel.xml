@@ -24,7 +24,7 @@ env.rport=22
 
 -->
 
-	<target name="ssh_scp_war.to.farm" depends="sshtunnel.jar">
+	<target name="deploy.ssh.scp.war.to.farm" depends="sshtunnel.jar" description="scp wrapped with ssh tunnel trasfer of ${env.local_file} to ${env.remote_host} ${env.remote_dir}">
 		<taskdef name="sshtunnel" classname="org.mike.Ant.SSHTunnel"
 			classpath="${sshtunnel.dir}/lib/ant-sshtunnel.jar" />
 
@@ -37,7 +37,7 @@ env.rport=22
 		</sshtunnel>
 	</target>
 
-	<target name="ssh_scp_files.to.server" depends="sshtunnel.jar">
+	<target name="deploy.ssh.scp.modified.to.server" depends="sshtunnel.jar" description="scp wrapped with ssh tunnel modified ${src.dir} and ${pub.dir} to ${env.remote_host} ${env.remote_dir}">
 		<taskdef name="sshtunnel" classname="org.mike.Ant.SSHTunnel"
 			classpath="${sshtunnel.dir}/lib/ant-sshtunnel.jar" />
 
@@ -57,7 +57,7 @@ env.rport=22
 		</sshtunnel>
 	</target>
 
-	<target name="sshtunnel.dist.to.deploy">
+	<target name="deploy.ssh.scp.dist.to.deploy"  description="scp wrapped with ssh tunnel ${dist.dir} to ${env.remote_host} ${env.remote_dir}">
 	    <path id="libpath">
 	      <pathelement path="${classpath}"/>
 	    	<pathelement path="${sshtunnel.dir}/java/src/sshtunnel/lib/jsch-0.1.41.jar"/>

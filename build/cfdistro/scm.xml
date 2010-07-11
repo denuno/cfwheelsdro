@@ -1,5 +1,6 @@
 <project name="revisions" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
+	<property name="basedir.absolute" location="${basedir}" />
 	<import file="scm-git.xml"/>
 	<import file="scm-svn.xml"/>
 	<import file="scm-cvs.xml"/>
@@ -19,12 +20,14 @@
 	<macrodef name="load-src-xml">
 		<sequential>
 			<antcontrib:runtarget target="check.creds" />
-			<loadfile property="src.xml" srcFile="src.xml">
+			<loadfile property="src.xml" srcFile="${basedir.absolute}/src.xml">
 				<filterchain>
 					<filterreader classname="org.apache.tools.ant.filters.ReplaceTokens">
 						<param type="token" name="src.dir" value="${src.dir}"/>
+						<param type="token" name="pub.dir" value="${pub.dir}"/>
+						<param type="token" name="lib.dir" value="${lib.dir}"/>
 						<param type="token" name="war.temp.dir" value="${war.temp.dir}"/>
-						<param type="propertiesfile" value="creds.txt" />
+						<param type="propertiesfile" value="${creds.token.file}" />
 					</filterreader>
 				</filterchain>
 			</loadfile>
@@ -35,18 +38,21 @@
 	</macrodef>
 	
 	<target name="exists.src.xml">
-		<available file="${basedir}/src.xml" type="file"
+		<available file="${basedir.absolute}/src.xml" type="file"
 		           property="exists.src.xml"/>
 		<antcontrib:if>
 			<equals arg1="${exists.src.xml}" arg2="true" />
 			<then>
-				<echo message="src file exists : ${basedir}/src.xml " />
+				<echo message="src file exists : ${basedir.absolute}/src.xml " />
 				<load-src-xml />
 			</then>
 			<else>
-				<echo message="No src file to import : ${basedir}/src.xml does not exist." />
+				<echo message="No src file to import : ${basedir.absolute}/src.xml does not exist." />
 			</else>
 		</antcontrib:if>
+		<property name="src.dir.absolute" location="${src.dir}" />
+		<antcontrib:var name="src.dir" unset="true" />
+		<property name="src.dir" location="${src.dir.absolute}" />				
 	</target>
 
 	<target name="exists.src.dir" depends="exists.src.xml" if="exists.src.xml">
@@ -59,8 +65,8 @@
 			<else>
 				<echo message="Src dir : ${src.dir} ain't there, downloading" />
 				<mkdir dir="${src.dir}"/>
-				<antcontrib:runtarget target="project.update" />				
-				<antcontrib:runtarget target="src.import" />				
+				<antcontrib:runtarget target="project.update" />
+				<antcontrib:runtarget target="src.import" />
 			</else>
 		</antcontrib:if>
 	</target>
@@ -72,15 +78,15 @@
 	</target>
 	
 	<target name="check.project.for.newrevision" depends="get.project.src.type" unless="revisions.are.same" if="exists.src.xml">
-		<available file="${project.src.dest}" type="dir" property="exists.project.dest.dir" />
+		<available file="${project.src.dest}/${project.src.type}" type="dir" property="exists.project.dest.dir" />
 		<antcontrib:if>
 			<equals arg1="${exists.project.dest.dir}" arg2="true" />
 			<then>
 				<antcontrib:runtarget target="check.project.for.newrevision.${project.src.type}" />
 			</then>
 			<else>
-				<echo message="Not there: ${project.src.dest}" />
-			</else>
+				<echo message="Not there: ${project.src.dest}/.${project.src.type}" />
+			</else> 
 		</antcontrib:if>
 	</target>
 

@@ -100,8 +100,8 @@
 				<param name="user" path="@user" default="" />
 				<param name="password" path="@password" default="" />
 				<param name="dirname" path="@dirname" default="" />
-
 				<actions>
+					<antcontrib:var name="exists.dest.dir" unset="true" />
 					<available file="@{dest}" type="dir" property="exists.dest.dir" />
 					<antcontrib:if>
 						<equals arg1="${exists.dest.dir}" arg2="true" />
@@ -118,8 +118,8 @@
 							</java>
 						</then>
 						<else>
-							<echo message="Src dir : @{dest} ain't there, downloading" />
-							<antcontrib:runtarget target="project.checkout.svn" />
+							<echo message="source destination : @{dest} ain't there, downloading from @{uri}" />
+							<svn-checkout dest="@{dest}" uri="@{uri}" user="@{user}" password="@{password}" />
 						</else>
 					</antcontrib:if>
 				</actions>
@@ -136,19 +136,9 @@
 				<param name="user" path="@user" default="" />
 				<param name="password" path="@password" default="" />
 				<param name="dirname" path="@dirname" default="" />
-
 				<actions>
 					<echo message="checkout to: @{dest}" />
-					<java classname="org.tmatesoft.svn.cli.SVN" fork="true" classpathref="svn.lib.path">
-						<arg value="co" />
-						<arg value="--non-interactive" />
-						<arg value="--username" />
-						<arg value="@{user}" />
-						<arg value="--password" />
-						<arg value="@{password}" />
-						<arg value="@{uri}" />
-						<arg value="@{dest}" />
-					</java>
+					<svn-checkout dest="@{dest}" uri="@{uri}" user="@{user}" password="@{password}" />
 				</actions>
 			</call>
 		</xmltask>
@@ -163,7 +153,6 @@
 				<param name="user" path="@user" default="" />
 				<param name="password" path="@password" default="" />
 				<param name="dirname" path="@dirname" default="" />
-
 				<actions>
 					<echo message="importing src: @{dest}" />
 					<java classname="org.tmatesoft.svn.cli.SVN" fork="true" classpathref="svn.lib.path">

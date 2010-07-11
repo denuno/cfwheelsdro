@@ -17,9 +17,10 @@
 		    </patternset>
 -->		    
 		</unzip>
+<!--
 		<requires-ext resource="${ext.acf.dir}/9/web-noflash.xml" />
 		<copy file="${ext.acf.dir}/9/web-noflash.xml" tofile="${war.temp.dir}/WEB-INF/web.xml" overwrite="true" />
-<!--
+		
 		<copy file="${ext.acf.war.dir}/WEB-INF/cfusion/lib/neo-runtime.xml" tofile="${war.temp.dir}/WEB-INF/cfusion/lib/neo-runtime.xml" overwrite="true" />
 		<copy file="${ext.acf.war.dir}/WEB-INF/cfusion/lib/adminconfig.xml" tofile="${war.temp.dir}/WEB-INF/cfusion/lib/adminconfig.xml" overwrite="true" />
 -->
@@ -81,7 +82,7 @@ vendor=0YV\#Y\!,U&;_;YN@)&)B'"WP  \n
 	</target>
 	
 	<target name="acf.mappings.xml.build" depends="exists.mappings.xml" if="exists.mappings.xml">
-	   <xmltask source="mappings.xml">
+	   <xmltask sourcebuffer="mappings.buff">
 	      <call path="mappings/*">
 	        <param name="virtual" path="@virtual" default="NONE"/>
 	        <param name="physical" path="@physical" default="NONE"/>

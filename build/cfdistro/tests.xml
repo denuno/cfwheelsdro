@@ -1,6 +1,5 @@
 <project name="tests" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
-
 	<property name="tests.run.url" value="http://localhost:${runwar.port}/${war.name}/tests/run.cfm" />
 	<target name="tests.run">
 		<mkdir dir="${war.temp.dir}" />
@@ -13,8 +12,8 @@
 					<antcontrib:if>
 						<equals arg1="${default.cfengine}" arg2="acf" />
 						<then>
-							<echo message="Running ACF, sleeping for 21 secs" />
-							<sleep seconds="21" />
+							<echo message="Running ACF, sleeping for 11 secs" />
+							<sleep seconds="11" />
 						</then>
 					</antcontrib:if>
 					<get src="${tests.run.url}" dest="${testresult.file}" verbose="true" ignoreerrors="true" />

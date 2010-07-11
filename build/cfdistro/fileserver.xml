@@ -37,7 +37,7 @@ max.users=20
 	</target>
 
 	<target name="fileserver.mappings.update">
-		<xmltask source="mappings.xml">
+		<xmltask source="${mappings.file}">
 			<call path="mappings/*">
 				<param name="virtual" path="@virtual" default="NONE" />
 				<param name="physical" path="@physical" default="NONE" />

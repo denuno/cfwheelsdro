@@ -1,0 +1,303 @@
+<?xml version="1.0"?>
+<project default="runTests">
+
+
+
+		<!--
+			<typedef name="numgt" classpath="${ext.dir}/ant-lib/den.ant.conditions.jar" classname="den.ant.conditions.NumGreaterThan" />
+			<target name="checkResinVersion">
+					<condition property="resin4">
+						<not>
+							<numgt arg1="${resin.version}" arg2="4" />
+						</not>
+					</condition>
+				<echo message="valueA is greater than valueB" />
+			</target>
+		-->
+		
+<!--INTERNAL TARGETS-->
+	<target name="addToRailoConf">
+		<replaceregexp byline="false" file="${INSTALL_PATH}/conf/httpd-railo.conf" flags="m">
+			<regexp pattern="^[\s]+?Include.*${railoconf.addhost}.$" />
+			<substitution expression="" />
+		</replaceregexp>
+		<echo file="${INSTALL_PATH}/conf/httpd-railo.conf" append="true">
+    	<![CDATA[Include "${INSTALL_PATH}/conf/${railoconf.addhost}"]]></echo>
+	</target>
+			  
+    <target name="configureApache">
+        <mkdir dir="${buildDir}"/>
+        <javac srcdir="${izPackDir}/sample/simple/src" includes="myCompany/tools/install/listener/ChmodCompilerListener.java" destdir="${buildDir}" debug="true" debuglevel="lines,source">
+            <classpath>
+                <fileset dir="${izPackDir}/lib">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="check-proxy-modules">
+			<loadfile property="modProxyMatches" srcFile="${tomcat-connector.apache.conf}">
+			  <filterchain>
+					<linecontainsregexp>
+					  <regexp pattern="^[\s]?LoadModule[\s]proxy"/>
+					</linecontainsregexp>
+			  </filterchain>
+			</loadfile>
+		  <echo message="${modProxyMatches}"/>
+		  <condition property="hasProxyAjpModules">
+		    <and>
+		    	<contains string="${modProxyMatches}" substring="proxy_module" casesensitive="false" />
+		    	<contains string="${modProxyMatches}" substring="proxy_ajp" casesensitive="false" />
+		    </and>
+		  </condition>
+		  <condition property="hasProxyHttpModules">
+		    <and>
+		    	<contains string="${modProxyMatches}" substring="proxy_module" casesensitive="false" />
+		    	<contains string="${modProxyMatches}" substring="proxy_http" casesensitive="false" />
+		    </and>
+		  </condition>
+		</target>
+
+    <target name="needsProxyAjpModules" unless="hasProxyAjpModules" depends="check-proxy-modules">
+    <echo>LoadModule proxy_ajp_module doesn't seem to be loaded!</echo>
+		</target>
+    <target name="needsProxyHttpModules" unless="hasProxyHttpModules" depends="check-proxy-modules">
+    <echo>LoadModule proxy_http_module doesn't seem to be loaded!</echo>
+		</target>
+
+		<target name="createVhostConfHttp" if="tomcat-connector.tomcat.protocal.isHttp">
+      <mkdir dir="${INSTALL_PATH}/conf/vhost"/>
+    	<echo file="${INSTALL_PATH}/conf/vhost/${tomcat-connector.webserver.host}-http.conf">
+			<![CDATA[
+				<VirtualHost *:80>
+				   ServerName ${tomcat-connector.webserver.host}
+				
+				   DocumentRoot "${tomcat-connector.webserver.docroot}"
+				
+				   ProxyPreserveHost On
+				   ProxyRequests Off
+				   <Proxy *>
+				      Order deny,allow
+				      Allow from all
+				   </Proxy>
+				   ProxyPass / http://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.http.port}/
+				   ProxyPassReverse / http://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.http.port}/
+				</VirtualHost>
+			]]>
+    	</echo>
+			<antcall target="addToRailoConf" inheritRefs="true">
+				<param name="railoconf.addhost" value="${tomcat-connector.webserver.host}-http.conf" />
+			</antcall>
+		</target>		
+
+		<target name="createVhostConfHttpRewrite" if="tomcat-connector.tomcat.protocal.isHttp, tomcat-connector.webserver.useModRewrite">
+      <mkdir dir="${INSTALL_PATH}/conf/vhost"/>
+    	<echo file="${INSTALL_PATH}/conf/vhost/${tomcat-connector.webserver.host}-http-rewrite.conf">
+			<![CDATA[
+				<VirtualHost *:80>
+				   ServerName ${tomcat-connector.webserver.host}
+				
+				   DocumentRoot "${tomcat-connector.webserver.docroot}"
+				
+				   ProxyPreserveHost On
+				   ProxyPassReverse / http://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.http.port}/
+				
+				   RewriteEngine On
+				   RewriteRule ^/(.*\.cf[cm])$ http://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.http.port}/$1 [P,QSA]
+				</VirtualHost>
+			]]>
+    	</echo>
+			<antcall target="addToRailoConf" inheritRefs="true">
+				<param name="railoconf.addhost" value="${tomcat-connector.webserver.host}-http-rewrite.conf" />
+			</antcall>
+		</target>
+
+		<target name="createVhostConfAjpRewrite" if="tomcat-connector.tomcat.protocal.isAjp, tomcat-connector.webserver.useModRewrite">
+      <mkdir dir="${INSTALL_PATH}/conf/vhost"/>
+    	<echo file="${INSTALL_PATH}/conf/vhost/${tomcat-connector.webserver.host}-ajp-rewrite.conf">
+			<![CDATA[
+				<VirtualHost *:80>
+				   ServerName ${tomcat-connector.webserver.host}
+				
+				   DocumentRoot "${tomcat-connector.webserver.docroot}"
+				
+				   ProxyPreserveHost On
+				   ProxyPassReverse / ajp://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.ajp.port}/
+				
+				   RewriteEngine On
+				   RewriteRule ^/(.*\.cf[cm])$ ajp://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.ajp.port}/$1 [P,QSA]
+				</VirtualHost>
+			]]>
+    	</echo>
+			<antcall target="addToRailoConf" inheritRefs="true">
+				<param name="railoconf.addhost" value="${tomcat-connector.webserver.host}-ajp-rewrite.conf" />
+			</antcall>
+		</target>		
+
+		<target name="createVhostConfAjp" if="tomcat-connector.tomcat.protocal.isAjp">
+      <mkdir dir="${INSTALL_PATH}/conf/vhost"/>
+    	<echo file="${INSTALL_PATH}/conf/vhost/${tomcat-connector.webserver.host}-ajp.conf">
+			<![CDATA[
+				<VirtualHost *:80>
+				   ServerName ${tomcat-connector.webserver.host}
+				
+				   DocumentRoot "${tomcat-connector.webserver.docroot}"
+				
+				   ProxyPreserveHost On
+				   ProxyPassReverse / ajp://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.ajp.port}/
+				
+				   RewriteEngine On
+				   RewriteRule ^/(.*\.cf[cm])$ ajp://${tomcat-connector.tomcat.host}:${tomcat-connector.tomcat.ajp.port}/$1 [P,QSA]
+				</VirtualHost>
+			]]>
+    	</echo>
+			<antcall target="addToRailoConf" inheritRefs="true">
+				<param name="railoconf.addhost" value="${tomcat-connector.webserver.host}-ajp-rewrite.conf" />
+			</antcall>
+		</target>		
+		
+		<target name="unLinkHttpdConfToRailoConf">
+			<replaceregexp byline="false"  file="${tomcat-connector.apache.conf}" flags="m">
+			  <regexp pattern="^[\s]+?Include.*httpd-railo.conf.$"/>
+			  <substitution expression=""/>
+			 </replaceregexp>
+		</target>
+
+		<target name="linkHttpdConfToRailoConf" depends="unLinkHttpdConfToRailoConf, needsProxyAjpModules,needsProxyHttpModules">
+    	<echo file="${tomcat-connector.apache.conf}" append="true">
+			<![CDATA[Include "${INSTALL_PATH}/conf/httpd-railo.conf"]]>
+			</echo>
+		</target>
+
+		<target name="runTests">
+			<property name="ext.dir" value="../../../../../ext/" />
+			<property name="INSTALL_PATH" location="./test/output" />
+			<property name="izPackDir" location="../../." />
+			<property name="tomcat-connector.apache.conf" value="./test/httpd.conf" />
+			<property name="tomcat-connector.webserver.host" value="localhost" />
+			<property name="tomcat-connector.webserver.docroot" value="/www/localhost" />
+			<property name="tomcat-connector.webserver.useModRewrite" value="true" />
+			<property name="tomcat-connector.tomcat.protocal.isAjp" value="true" />
+			<property name="tomcat-connector.tomcat.protocal.isHttp" value="true" />			
+			<property name="tomcat-connector.tomcat.host" value="tomcathost.fun" />			
+			<property name="tomcat-connector.tomcat.ajp.port" value="8009" />			
+			<property name="tomcat-connector.tomcat.http.port" value="8080" />			
+			<antcall target="createVhostConfAjp"/>
+			<antcall target="createVhostConfAjpRewrite"/>
+			<antcall target="createVhostConfHttp"/>
+			<antcall target="createVhostConfHttpRewrite"/>
+			<antcall target="linkHttpdConfToRailoConf"/>
+		</target>
+
+		<target name="do-if-resin-conf"  if="resin.conf.present">
+			<echo message="resin.conf.exists" />
+			<taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask"/>
+			<xmltask source="${resin.install.dir}/conf/resin.conf" dest="${resin.install.dir}/conf/resin.conf">
+				<attr path="//:host-deploy[@path]" attr="path" value="conf/vhosts"/>			
+				<insert path="//:host-deploy/:host-default" position="under">
+				<![CDATA[
+        <web-app id="/" root-directory="${path}" xmlns="http://caucho.com/ns/resin" />
+				]]>
+				</insert> 
+				<insert path="//:resin/:class-loader" position="under">
+				<![CDATA[
+		    <tree-loader path="${INSTALL_PATH}/lib" xmlns="http://caucho.com/ns/resin"/>
+				]]>
+				</insert> 
+			</xmltask>
+			<xmltask source="${resin.install.dir}/conf/app-default.xml" dest="${resin.install.dir}/conf/app-default.xml">
+				<insert path="//:cluster/:web-app-default/:welcome-file-list" position="under">
+				<![CDATA[
+		    <welcome-file xmlns="http://caucho.com/ns/resin">index.cfm</welcome-file>
+				]]>
+				</insert> 
+				<insert path="//:cluster/:web-app-default" position="under">
+				<![CDATA[
+<servlet servlet-name="CFMLServlet" servlet-class="railo.loader.servlet.CFMLServlet" xmlns="http://caucho.com/ns/resin">
+<init-param>
+<param-name>railo-web-directory</param-name>
+<param-value>{web-root-directory}/WEB-INF/railo/</param-value>
+<description>Railo Web Directory directory</description>
+</init-param>
+<!-- init-param>
+<param-name>railo-server-directory</param-name>
+<param-value>./</param-value>
+<description>directory where railo root directory is stored</description>
+</init-param -->   
+<load-on-startup>1</load-on-startup>
+</servlet>
+<servlet servlet-name="AMFServlet" servlet-class="railo.loader.servlet.AMFServlet" xmlns="http://caucho.com/ns/resin">
+<load-on-startup>2</load-on-startup>
+</servlet>
+
+<servlet-mapping url-pattern="*.cfm" servlet-name="CFMLServlet" xmlns="http://caucho.com/ns/resin"/>
+<servlet-mapping url-pattern="*.cfml" servlet-name="CFMLServlet" xmlns="http://caucho.com/ns/resin"/>
+<servlet-mapping url-pattern="*.cfc" servlet-name="CFMLServlet" xmlns="http://caucho.com/ns/resin"/>
+<servlet-mapping url-pattern="*.cfm/*" servlet-name="CFMLServlet" xmlns="http://caucho.com/ns/resin"/>
+<servlet-mapping url-pattern="*.cfml/*" servlet-name="CFMLServlet" xmlns="http://caucho.com/ns/resin"/>
+<servlet-mapping url-pattern="*.cfc/*" servlet-name="CFMLServlet" xmlns="http://caucho.com/ns/resin"/>
+<servlet-mapping url-pattern="/flashservices/gateway/*" servlet-name="AMFServlet" xmlns="http://caucho.com/ns/resin"/>
+
+<mime-mapping extension=".docm" mime-type="application/vnd.ms-word.document.macroEnabled.12" />
+<mime-mapping extension=".docx" mime-type="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+<mime-mapping extension=".dotm" mime-type="application/vnd.ms-word.template.macroEnabled.12" />
+<mime-mapping extension=".dotx" mime-type="application/vnd.openxmlformats-officedocument.wordprocessingml.template" />
+<mime-mapping extension=".potm" mime-type="application/vnd.ms-powerpoint.template.macroEnabled.12" />
+<mime-mapping extension=".potx" mime-type="application/vnd.openxmlformats-officedocument.presentationml.template" />
+<mime-mapping extension=".ppam" mime-type="application/vnd.ms-powerpoint.addin.macroEnabled.12" />
+<mime-mapping extension=".ppsm" mime-type="application/vnd.ms-powerpoint.slideshow.macroEnabled.12" />
+<mime-mapping extension=".ppsx" mime-type="application/vnd.openxmlformats-officedocument.presentationml.slideshow" />
+<mime-mapping extension=".pptm" mime-type="application/vnd.ms-powerpoint.presentation.macroEnabled.12" />
+<mime-mapping extension=".pptx" mime-type="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+<mime-mapping extension=".xlam" mime-type="application/vnd.ms-excel.addin.macroEnabled.12" />
+<mime-mapping extension=".xlsb" mime-type="application/vnd.ms-excel.sheet.binary.macroEnabled.12" />
+<mime-mapping extension=".xlsm" mime-type="application/vnd.ms-excel.sheet.macroEnabled.12" />
+<mime-mapping extension=".xlsx" mime-type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+<mime-mapping extension=".xltm" mime-type="application/vnd.ms-excel.template.macroEnabled.12" />
+<mime-mapping extension=".xltx" mime-type="application/vnd.openxmlformats-officedocument.spreadsheetml.template" />
+				]]>
+				</insert> 
+			</xmltask>
+		</target>
+
+    <target name="configureResin" depends="do-if-resin-conf">
+      <mkdir dir="${resin.install.dir}/conf/vhosts/${railo.hostname}"/>
+    	<echo file="${resin.install.dir}/conf/vhosts/${railo.hostname}/host.xml">
+    	<![CDATA[
+<host xmlns="http://caucho.com/ns/resin"
+    xmlns:resin="http://caucho.com/ns/resin/core">
+    <resin:set var="path" value="${Railo.webroot}" />
+    <host-alias>${railo.hostname}</host-alias>
+<!--      <host-alias>alurium.net</host-alias>-->
+<!--      <host-alias>100.100.100.100</host-alias>-->
+</host>]]>
+    	</echo>
+
+    </target>
+
+	<target name="testConfigureResin">
+			<property name="ext.dir" value="../../../../../ext/" />
+			<property name="INSTALL_PATH" value="./tmpinstall" />
+			<property name="izPackDir" location="../../." />
+			<property name="railo.hostname" value="localhost" />
+			<property name="installBaseDir" value="${basedir}/../../../install" />
+			<property name="install.generation.dir" value="${installBaseDir}/generated" />
+					
+			<loadproperties srcFile="resin.properties" />
+			<taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask" classpath="${ext.dir}/ant-lib/xmltask-v1.15.1.jar"/>
+			<antcall target="expandResinToTempDir"/>
+			<antcall target="do-if-resin-conf"/>
+
+	</target>
+
+
+	<target name="expandResinToTempDir">
+		<unzip dest="${INSTALL_PATH}" src="${resin.install.zip}">
+			<patternset>
+				<include name="**/conf/*" />
+			</patternset>
+		</unzip>
+	</target>
+
+</project>

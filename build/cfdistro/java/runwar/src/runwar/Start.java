@@ -1,6 +1,7 @@
 package runwar;
 
 import java.io.IOException;
+import java.io.File;
 
 import java.io.PrintStream;
 import java.io.FileOutputStream;
@@ -55,7 +56,7 @@ public class Start {
     
 	public static void main(String[] args) throws Exception {
 		PrintStream stdout = null;
-		String warPath = args[0];
+		String warPath = new File(args[0]).toURI().toURL().toString();
 		String contextPath = args[1];
 		int portNumber = Integer.parseInt(args[2]);
 		int socketNumber = Integer.parseInt(args[3]);
@@ -69,6 +70,11 @@ public class Start {
 		} catch (Exception e) {
 			// Sigh. Couldn't open the file.
 			System.out.println("Redirect:  Unable to open output file!");
+		}
+
+		if(!new File(args[0]).exists()) {
+			System.out.println("No war file "+new File(args[4]).toString());
+			System.exit(1);
 		}
 
 		server = new Server();
@@ -104,7 +110,7 @@ public class Start {
         requestLog.setLogTimeZone("GMT");
         requestLogHandler.setRequestLog(requestLog);		
 		
-		WebAppContext context = new WebAppContext(contexts,"file:"+warPath + "/",contextPath);
+		WebAppContext context = new WebAppContext(contexts,warPath,contextPath);
         context.setConfigurationClasses(__plusConfigurationClasses);
 //		context.setContextPath(contextPath);
 		//context.setResourceBase(warPath);

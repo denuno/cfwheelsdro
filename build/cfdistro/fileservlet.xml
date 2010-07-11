@@ -3,7 +3,9 @@
 
 	<target name="fileservelet.servlet.install">
 		<mkdir dir="${war.temp.dir}/WEB-INF/classes"/>
-		<javac srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
+		<javac-ecj srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" 
+			classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
+
 		<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
 			<insert path="web-app/servlet[1]" position="before">
 				<![CDATA[
@@ -35,7 +37,8 @@
 		<element name="args" optional="true" />
 		<sequential>
 			<mkdir dir="${war.temp.dir}/WEB-INF/classes"/>
-			<javac srcdir="${cfdistro.basedir}/java/fileservlet/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
+			<javac-ecj srcdir="${cfdistro.basedir}/java/fileservlet/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}"/>
+			
 			<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
 				<insert path="web-app/servlet[1]" position="before">
 					<![CDATA[
@@ -48,7 +51,7 @@
 						</init-param>
 					</servlet>
 					<servlet-mapping>
-					    <servlet-name>fileServlet</servlet-name>
+					    <servlet-name>@{servletname}</servlet-name>
 					    <url-pattern>@{urlpattern}</url-pattern>
 					</servlet-mapping>
 					]]>
