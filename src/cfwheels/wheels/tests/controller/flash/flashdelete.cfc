@@ -1,18 +1,29 @@
 <cfcomponent extends="wheelsMapping.test">
 
-	<cfset params = {controller="dummy", action="dummy"}>
-	<cfset controller = $controller(name="dummy").$createControllerObject(params)>
+	<cfinclude template="setup.cfm">
 
 	<cffunction name="test_flashDelete_invalid">
-		<cfset session.flash = {}>
-		<cfset result = controller.flashDelete(key="success")>
+		<cfset run_flashDelete_invalid()>
+		<cfset application.wheels.flashStorage = "cookie">
+		<cfset run_flashDelete_invalid()>
+	</cffunction>
+
+	<cffunction name="run_flashDelete_invalid">
+		<cfset loc.controller.flashClear()>
+		<cfset result = loc.controller.flashDelete(key="success")>
 		<cfset assert("result IS false")>
 	</cffunction>
 	
 	<cffunction name="test_flashDelete_valid">
-		<cfset session.flash = {}>
-		<cfset controller.flashInsert(success="Congrats!")>
-		<cfset result = controller.flashDelete(key="success")>
+		<cfset run_flashDelete_valid()>
+		<cfset application.wheels.flashStorage = "cookie">
+		<cfset run_flashDelete_valid()>
+	</cffunction>
+
+	<cffunction name="run_flashDelete_valid">
+		<cfset loc.controller.flashClear()>
+		<cfset loc.controller.flashInsert(success="Congrats!")>
+		<cfset result = loc.controller.flashDelete(key="success")>
 		<cfset assert("result IS true")>
 	</cffunction>
 	

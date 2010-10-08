@@ -1,7 +1,7 @@
 <cfcomponent extends="wheelsMapping.test">
 
 	<cffunction name="setup">
-		<cfset loc.controller = $controller(name="dummy")>
+		<cfset loc.controller = controller(name="dummy")>
 		<cfset loc.now = now()>
 		<cfset loc.args = {}>
 		<cfset loc.args.includeSeconds = true>
@@ -43,7 +43,7 @@
 	<cffunction name="test_with_seconds_below_60_seconds">
 		<cfset loc.c = 60 - 1>
 		<cfset loc.args.fromTime = dateadd('s', -loc.c, loc.now)>
-		<cfset halt(false, 'loc.args')>
+		<cfset debug('loc.args', false)>
 		<cfset loc.e = loc.controller.timeAgoInWords(argumentCollection=loc.args)>
 		<cfset loc.r = "less than a minute">
 		<cfset assert("loc.e eq loc.r")>
@@ -137,7 +137,7 @@
 		<cfset loc.c = 1051200 - 1>
 		<cfset loc.args.fromTime = dateadd('n', -loc.c, loc.now)>
 		<cfset loc.e = loc.controller.timeAgoInWords(argumentCollection=loc.args)>
-		<cfset loc.r = "about 1 year">
+		<cfset loc.r = "almost 2 years">
 		<cfset assert("loc.e eq loc.r")>
 	</cffunction>
 

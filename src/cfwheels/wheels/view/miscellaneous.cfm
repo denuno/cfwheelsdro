@@ -1,25 +1,129 @@
-<cffunction name="contentForLayout" returntype="string" access="public" output="false" hint="Used inside a layout file to output the HTML created in the view."
+<cffunction name="contentFor" returntype="void" access="public" output="false" hint="Used to store a section's output for rendering within a layout. This content store acts as a stack, so you can store multiple pieces of content for a given section."
 	examples=
-	'
-		<!--- views/layout.cfm --->
+	'	
+		<!--- In your view --->
+		<cfsavecontent variable="mySidebar">
+		<h1>My Sidebar Text</h1>
+		</cfsavecontent>
+		<cfset contentFor(sidebar=mySidebar)>
+		
+		<!--- In your layout --->
 		<html>
 		<head>
 		    <title>My Site</title>
 		</head>
 		<body>
-
+		
 		<cfoutput>
-		##contentForLayout()##
+		##includeContent("sidebar")##
+		
+		##includeContent()##
 		</cfoutput>
 
 		</body>
 		</html>
 	'
-	categories="view-helper,miscellaneous" chapters="using-layouts">
-	<cfreturn request.wheels.contentForLayout>
+	categories="view-helper,miscellaneous" chapters="">
+	<cfargument name="position" type="any" required="false" default="last" hint="The position in the section's stack where you want the content placed. Valid values are `first`, `last`, or the numeric position.">
+	<cfargument name="overwrite" type="any" required="false" default="false" hint="Whether or not to overwrite any of the content. Valid values are `false`, `true`, or `all`.">
+	<cfset var loc = {}>
+	
+	<!--- position in the array for the content --->
+	<cfset loc.position = "last">
+	<!--- should we overwrite or insert into the array --->
+	<cfset loc.overwrite = "false">
+	
+	<!--- extract optional arguments --->
+	<cfif StructKeyExists(arguments, "position")>
+		<cfset loc.position = arguments.position>
+		<cfset StructDelete(arguments, "position", false)>
+	</cfif>
+	
+	<cfif StructKeyExists(arguments, "overwrite")>
+		<cfset loc.overwrite = arguments.overwrite>
+		<cfset StructDelete(arguments, "overwrite", false)>
+	</cfif>
+	
+	<!--- if no other arguments exists, exit --->
+	<cfif StructIsEmpty(arguments)>
+		<cfreturn>
+	</cfif>
+	
+	<!--- since we're not going to know the name of the section, we have to get it dynamically --->
+	<cfset loc.section = ListFirst(StructKeyList(arguments))>
+	<cfset loc.content = arguments[loc.section]>
+	
+	<cfif !IsBoolean(loc.overwrite)>
+		<cfset loc.overwrite = "all">
+	</cfif>
+	
+	<cfif !StructKeyExists(variables.$instance.contentFor, loc.section) OR loc.overwrite eq "all">
+		<!--- if the section doesn't exists, or they want to overwrite the whole thing --->
+		<cfset variables.$instance.contentFor[loc.section] = []>
+		<cfset ArrayAppend(variables.$instance.contentFor[loc.section], loc.content)>
+	<cfelse>
+		<cfset loc.size = ArrayLen(variables.$instance.contentFor[loc.section])>
+		<!--- they want to append, prepend or insert at a specific point in the array --->
+		<!--- make sure position is within range --->
+		<cfif !IsNumeric(loc.position) AND !ListFindNoCase("first,last", loc.position)>
+			<cfset loc.position = "last">
+		</cfif>
+		<cfif IsNumeric(loc.position)>
+			<cfif loc.position lte 1>
+				<cfset loc.position = "first">
+			<cfelseif loc.position gte loc.size>
+				<cfset loc.position = "last">
+			</cfif>
+		</cfif>
+
+		<cfif loc.overwrite>
+			<cfif loc.position is "last">
+				<cfset loc.position = loc.size>
+			<cfelseif loc.position is "first">
+				<cfset loc.position = 1>
+			</cfif>
+			<cfset variables.$instance.contentFor[loc.section][loc.position] = loc.content>
+		<cfelse>
+			<cfif loc.position is "last">
+				<cfset ArrayAppend(variables.$instance.contentFor[loc.section], loc.content)>
+			<cfelseif loc.position is "first">
+				<cfset ArrayPrepend(variables.$instance.contentFor[loc.section], loc.content)>
+			<cfelse>
+				<cfset ArrayInsertAt(variables.$instance.contentFor[loc.section], loc.position, loc.content)>
+			</cfif>
+		</cfif>			
+	</cfif>
 </cffunction>
 
-<cffunction name="includePartial" returntype="string" access="public" output="false" hint="Includes the specified file in the view. Similar to using `cfinclude` but with the ability to cache the result and using Wheels specific file look-up. By default, Wheels will look for the file in the current controller's view folder. To include a file relative from the `views` folder, you can start the path supplied to `name` with a forward slash."
+<cffunction name="includeLayout" returntype="string" access="public" output="false" hint="Includes the contents of another layout file. This is usually used to include a parent layout from within a child layout."
+	examples=
+	'
+		<!--- Make sure that the `sidebar` value is provided for the parent layout --->
+		<cfsavecontent variable="categoriesSidebar">
+			<cfoutput>
+				<ul>
+					##includePartial(categories)##
+				</ul>
+			</cfoutput>
+		</cfsavecontent>
+		<cfset contentFor(sidebar=categoriesSidebar)>
+		
+		<!--- Include parent layout at `views/layout.cfm` --->
+		<cfoutput>
+			##includeLayout("/layout.cfm")##
+		</cfoutput>
+	'
+	categories="view-helper,miscellaneous" chapters="using-layouts" functions="usesLayout,renderPage">
+	<cfargument name="name" type="string" required="false" default="layout" hint="Name of the layout file to include.">
+	<cfscript>
+		arguments.partial = arguments.name;
+		StructDelete(arguments, "name");
+		arguments.$prependWithUnderscore = false;
+		return includePartial(argumentCollection=arguments);
+	</cfscript>
+</cffunction>
+
+<cffunction name="includePartial" returntype="string" access="public" output="false" hint="Includes the specified partial file in the view. Similar to using `cfinclude` but with the ability to cache the result and use Wheels-specific file look-up. By default, Wheels will look for the file in the current controller's view folder. To include a file relative from the base `views` folder, you can start the path supplied to `name` with a forward slash."
 	examples=
 	'
 		<cfoutput>##includePartial("login")##</cfoutput>
@@ -33,32 +137,38 @@
 	'
 	categories="view-helper,miscellaneous" chapters="pages,partials" functions="renderPartial">
 	<cfargument name="partial" type="any" required="true" hint="See documentation for @renderPartial.">
-	<cfargument name="group" type="string" required="false" default="" hint="Field to group the query by. A new query will be passed into the partial template for you to iterate over.">
+	<cfargument name="group" type="string" required="false" default="" hint="If passing a query result set for the `partial` argument, use this to specify the field to group the query by. A new query will be passed into the partial template for you to iterate over.">
 	<cfargument name="cache" type="any" required="false" default="" hint="See documentation for @renderPartial.">
 	<cfargument name="layout" type="string" required="false" hint="See documentation for @renderPartial.">
 	<cfargument name="spacer" type="string" required="false" hint="HTML or string to place between partials when called using a query.">
-	<cfset $insertDefaults(name="includePartial", input=arguments)>
-	<cfreturn $includeOrRenderPartial(argumentCollection=$dollarify(arguments, "partial,group,cache,layout,spacer"))>
+	<cfargument name="dataFunction" type="any" required="false" hint="Name of controller function to load data from.">
+	<cfargument name="$prependWithUnderscore" type="boolean" required="false" default="true">
+	<cfset $args(name="includePartial", args=arguments)>
+	<cfreturn $includeOrRenderPartial(argumentCollection=$dollarify(arguments, "partial,group,cache,layout,spacer,dataFunction"))>
 </cffunction>
 
 <cffunction name="cycle" returntype="string" access="public" output="false" hint="Cycles through list values every time it is called."
 	examples=
 	'
-		<!--- alternating table row colors --->
+		<!--- Alternating table row colors --->
 		<table>
-			<tr>
-				<th>Name</th>
-				<th>Phone</th>
-			</tr>
-			<cfoutput query="employees">
-				<tr class="##cycle("even,odd")##">
-					<td>##employees.name##</td>
-					<td>##employees.phone##</td>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Phone</th>
 				</tr>
-			</cfoutput>
+			</thead>
+			<tbody>
+				<cfoutput query="employees">
+					<tr class="##cycle("odd,even")##">
+						<td>##employees.name##</td>
+						<td>##employees.phone##</td>
+					</tr>
+				</cfoutput>
+			</tbody>
 		</table>
 		
-		<!--- alternating row colors and shrinking emphasis --->
+		<!--- Alternating row colors and shrinking emphasis --->
 		<cfoutput query="employees" group="departmentId">
 			<div class="##cycle(values="even,odd", name="row")##">
 				<ul>
@@ -137,7 +247,9 @@
 			for (loc.key in arguments)
 			{
 				if (!ListFindNoCase("name,attributes,close,skip,skipStartingWith", loc.key))
+				{
 					arguments.attributes[loc.key] = arguments[loc.key];
+				}
 			}
 		}
 		
@@ -151,23 +263,39 @@
 			loc.key = ListGetAt(loc.sortedKeys, loc.i);
 			// place the attribute name and value in the string unless it should be skipped according to the arguments or if it's an internal argument (starting with a "$" sign)
 			if (!ListFindNoCase(arguments.skip, loc.key) && (!Len(arguments.skipStartingWith) || Left(loc.key, Len(arguments.skipStartingWith)) != arguments.skipStartingWith) && Left(loc.key, 1) != "$")
+			{
 				// replace boolean arguments for the disabled and readonly attributs with the key (if true) or skip putting it in the output altogether (if false)
 				if (ListFindNoCase("disabled,readonly", loc.key) and IsBoolean(arguments.attributes[loc.key]))
 				{
 					if (arguments.attributes[loc.key])
-						loc.returnValue = loc.returnValue & " " & LCase(loc.key) & "=""" & LCase(loc.key) & """";
-				} else {
-					loc.returnValue = loc.returnValue & " " & LCase(loc.key) & "=""" & arguments.attributes[loc.key] & """";	
+					{
+						loc.returnValue &= $tagAttribute(loc.key, LCase(loc.key));
+					}
 				}
+				else
+				{
+					loc.returnValue &= $tagAttribute(loc.key, arguments.attributes[loc.key]);
+				}
+			}
 		}
 
 		// close the tag (usually done on self-closing tags like "img" for example) or just end it (for tags like "div" for example)
 		if (arguments.close)
-			loc.returnValue = loc.returnValue & " />";
+		{
+			loc.returnValue &= " />";
+		}
 		else
-			loc.returnValue = loc.returnValue & ">";		
+		{
+			loc.returnValue &= ">";
+		}		
 	</cfscript>
 	<cfreturn loc.returnValue>
+</cffunction>
+
+<cffunction name="$tagAttribute" returntype="string" access="public" output="false">
+	<cfargument name="name" type="string" required="true">
+	<cfargument name="value" type="string" required="true">
+	<cfreturn ' #LCase(arguments.name)#="#arguments.value#"'>
 </cffunction>
 
 <cffunction name="$element" returntype="string" access="public" output="false">
@@ -183,6 +311,41 @@
 		returnValue = $tag(argumentCollection=arguments) & returnValue & "</" & arguments.name & ">";
 	</cfscript>
 	<cfreturn returnValue>
+</cffunction>
+
+<cffunction name="$objectName" returntype="any" access="public" output="false">
+	<cfargument name="objectName" type="any" required="true">
+	<cfargument name="association" type="string" required="false" default="">
+	<cfargument name="position" type="string" required="false" default="">
+	<cfscript>
+		var loc = {};
+		loc.currentModelObject = false;
+		loc.hasManyAssociationCount = 0;
+		// combine our arguments
+		$combineArguments(args=arguments, combine="positions,position");
+		$combineArguments(args=arguments, combine="associations,association");
+		// only try to create the object name if we have a simple value
+		if (IsSimpleValue(arguments.objectName) && ListLen(arguments.associations))
+		{
+			for (loc.i = 1; loc.i lte ListLen(arguments.associations); loc.i++)
+			{
+				loc.association = ListGetAt(arguments.associations, loc.i);
+				loc.currentModelObject = $getObject(arguments.objectName);
+				arguments.objectName = arguments.objectName & "['" & loc.association & "']";
+				loc.expanded = loc.currentModelObject.$expandedAssociations(include=loc.association);
+				loc.expanded = loc.expanded[1];
+				// is this assocication a hasMany?
+				if (loc.expanded.type == "hasMany")
+				{
+					loc.hasManyAssociationCount++;
+					if (loc.hasManyAssociationCount gt ListLen(arguments.positions) && application.wheels.showErrorInformation)
+						$throw(type="Wheels.InvalidArgument", message="You passed the hasMany association of `#loc.association#` but did not provide a corresponding position.");
+					arguments.objectName = arguments.objectName & "[" & ListGetAt(arguments.positions, loc.hasManyAssociationCount) & "]";
+				}
+			}
+		}
+	</cfscript>
+	<cfreturn arguments.objectName>
 </cffunction>
 
 <cffunction name="$tagId" returntype="string" access="public" output="false">
@@ -203,8 +366,6 @@
 				loc.returnValue = REReplace(REReplace(loc.returnValue & arguments.property, "[,\[]", "-", "all"), "[""'\]]", "", "all");
 			else
 				loc.returnValue = REReplace(REReplace(loc.returnValue & "-" & arguments.property, "[,\[]", "-", "all"), "[""'\]]", "", "all");
-			if (Find("--", loc.returnValue)) // we have a new object and we don't want to repeat ids
-				loc.returnValue = Replace(loc.returnValue, "--", "-new-" & $getNewObjectCount(loc.returnValue) & "-", "all");
 		}
 		else
 		{
@@ -213,7 +374,7 @@
 		if (Len(arguments.valueToAppend))
 			loc.returnValue = loc.returnValue & "-" & arguments.valueToAppend;
 	</cfscript>
-	<cfreturn loc.returnValue>
+	<cfreturn REReplace(loc.returnValue, "-+", "-", "all")>
 </cffunction>
 
 <cffunction name="$tagName" returntype="string" access="public" output="false">
@@ -257,7 +418,7 @@
 				loc.objectReference = "";
 				for (loc.j = 1; loc.j lte loc.i; loc.j++)
 					loc.objectReference = ListAppend(loc.objectReference, ListGetAt(arguments.objectName, loc.j, "["), "[");
-				loc.returnValue = ListSetAt(loc.returnValue, loc.i, $getObject(loc.objectReference).key() & "]", "[");
+				loc.returnValue = ListSetAt(loc.returnValue, loc.i, $getObject(loc.objectReference).key($returnTickCountWhenNew=true) & "]", "[");
 			}
 		}
 	</cfscript>
@@ -291,34 +452,20 @@
 		var loc = {};
 		loc.returnValue = "";
 		
-		if (Find(".", arguments.objectName) or Find("[", arguments.objectName)) // we can't directly invoke objects in structure or arrays of objects so we must evaluate
+		try
 		{
-			if (ReFind("\[\]", arguments.objectName)) // we have an array object without a postion so create a new object to return
-			{
-				loc.array = ListToArray(ReplaceList(arguments.objectName, "],'", ""), "[", false);
-				loc.returnValue = $invoke(componentReference=model(singularize(loc.array[ArrayLen(loc.array)])), method="new");
-			}
-			else
-			{
+			if (Find(".", arguments.objectName) or Find("[", arguments.objectName)) // we can't directly invoke objects in structure or arrays of objects so we must evaluate
 				loc.returnValue = Evaluate(arguments.objectName);
-			}
+			else
+				loc.returnValue = variables[arguments.objectName];
 		}
-		else
+		catch (Any e)
 		{
-			loc.returnValue = variables[arguments.objectName];
-		}
+			if (application.wheels.showErrorInformation)
+				$throw(type="Wheels.ObjectNotFound", message="Wheels tried to find the model object `#arguments.objectName#` for the form helper, but it does not exist.");
+			else
+				$throw(argumentCollection=e);
+		}	
 	</cfscript>
 	<cfreturn loc.returnValue>
-</cffunction>
-
-<cffunction name="$getNewObjectCount" returntype="numeric" access="public" output="false">
-	<cfargument name="id" type="string" required="true" />
-	<cfscript>
-		if (!StructKeyExists(request.wheels, "counts"))
-			request.wheels.counts = {};
-		if (!StructKeyExists(request.wheels.counts, arguments.id))
-			request.wheels.counts[arguments.id] = 0;
-		request.wheels.counts[arguments.id]++;
-	</cfscript>
-	<cfreturn request.wheels.counts[arguments.id] />
 </cffunction>

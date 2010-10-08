@@ -3,29 +3,45 @@
 	'
 		<!--- view code --->
 		<head>
+			<!--- Includes `stylesheets/styles.css` --->
 		    ##styleSheetLinkTag("styles")##
+			<!--- Includes `stylesheets/blog.css` and `stylesheets/comments.css` --->
+			##styleSheetLinkTag("blog,comments")##
+			<!--- Includes printer style sheet --->
+			##styleSheetLinkTag(source="print", media="print")##
 		</head>
+		
+		<body>
+			<!--- This will still appear in the `head` --->
+			##styleSheetLinkTag(source="tabs", head=true)##
+		</body>
 	'
 	categories="view-helper,assets" chapters="miscellaneous-helpers" functions="javaScriptIncludeTag,imageTag">
-	<cfargument name="sources" type="string" required="false" default="" hint="The name of one or many CSS files in the `stylesheets` folder, minus the `.css` extension. (Can also be called with the `source` argument).">
+	<cfargument name="sources" type="string" required="false" default="" hint="The name of one or many CSS files in the `stylesheets` folder, minus the `.css` extension. (Can also be called with the `source` argument.)">
 	<cfargument name="type" type="string" required="false" hint="The `type` attribute for the `link` tag.">
 	<cfargument name="media" type="string" required="false" hint="The `media` attribute for the `link` tag.">
-	<cfargument name="head" type="string" required="false" hint="Set to `true` to place the output in the `head` area of the HTML page instead of the default behavior which is to place the output where the function is called from.">
+	<cfargument name="head" type="string" required="false" hint="Set to `true` to place the output in the `head` area of the HTML page instead of the default behavior, which is to place the output where the function is called from.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="styleSheetLinkTag", input=arguments);
-		$combineArguments(args=arguments, combine="sources,source", required=true);
-		$insertDefaults(name="styleSheetLinkTag", reserved="href,rel", input=arguments);
+		$args(name="styleSheetLinkTag", args=arguments, combine="sources/source/!", reserved="href,rel");
 		arguments.rel = "stylesheet";
 		loc.returnValue = "";
-		loc.iEnd = ListLen(arguments.sources);
+		arguments.sources = $listClean(list=arguments.sources, returnAs="array");
+		loc.iEnd = ArrayLen(arguments.sources);
 		for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 		{
-			loc.item = ListGetAt(arguments.sources, loc.i);
-			arguments.href = application.wheels.webPath & application.wheels.stylesheetPath & "/" & Trim(loc.item);
-			if (!ListFindNoCase("css,cfm", ListLast(loc.item, ".")))
-				arguments.href = arguments.href & ".css";
-			arguments.href = $assetDomain(arguments.href) & $appendQueryString();
+			loc.item = arguments.sources[loc.i];
+			if (ReFindNoCase("^https?:\/\/", loc.item))
+			{
+				arguments.href = arguments.sources[loc.i];
+			}
+			else
+			{
+				arguments.href = application.wheels.webPath & application.wheels.stylesheetPath & "/" & loc.item;
+				if (!ListFindNoCase("css,cfm", ListLast(loc.item, ".")))
+					arguments.href = arguments.href & ".css";
+				arguments.href = $assetDomain(arguments.href) & $appendQueryString();
+			}
 			loc.returnValue = loc.returnValue & $tag(name="link", skip="sources,head", close=true, attributes=arguments) & chr(10);
 		}
 		if (arguments.head)
@@ -37,32 +53,46 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="javaScriptIncludeTag" returntype="string" access="public" output="false" hint="Returns a `script` tag for a Javascript file (or several) tag based on the supplied arguments."
+<cffunction name="javaScriptIncludeTag" returntype="string" access="public" output="false" hint="Returns a `script` tag for a JavaScript file (or several) based on the supplied arguments."
 	examples=
 	'
 		<!--- view code --->
 		<head>
+			<!--- Includes `javascripts/main.js` --->
 		    ##javaScriptIncludeTag("main")##
+			<!--- Includes `javascripts/blog.js` and `javascripts/accordion.js` --->
+			##javaScriptIncludeTag("blog,accordion")##
 		</head>
+		
+		<body>
+			<!--- Will still appear in the `head` --->
+			##javaScriptIncludeTag(source="tabs", head=true)##
+		</body>
 	'
 	categories="view-helper,assets" chapters="miscellaneous-helpers" functions="styleSheetLinkTag,imageTag">
-	<cfargument name="sources" type="string" required="false" default="" hint="The name of one or many JavaScript files in the `javascripts` folder, minus the `.js` extension. (Can also be called with the `source` argument).">
+	<cfargument name="sources" type="string" required="false" default="" hint="The name of one or many JavaScript files in the `javascripts` folder, minus the `.js` extension. (Can also be called with the `source` argument.)">
 	<cfargument name="type" type="string" required="false" hint="The `type` attribute for the `script` tag.">
 	<cfargument name="head" type="string" required="false" hint="See documentation for @styleSheetLinkTag.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="javaScriptIncludeTag", input=arguments);
-		$combineArguments(args=arguments, combine="sources,source", required=true);
-		$insertDefaults(name="javaScriptIncludeTag", reserved="src", input=arguments);
+		$args(name="javaScriptIncludeTag", args=arguments, combine="sources/source/!", reserved="src");
 		loc.returnValue = "";
-		loc.iEnd = ListLen(arguments.sources);
+		arguments.sources = $listClean(list=arguments.sources, returnAs="array");
+		loc.iEnd = ArrayLen(arguments.sources);
 		for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 		{
-			loc.item = ListGetAt(arguments.sources, loc.i);
-			arguments.src = application.wheels.webPath & application.wheels.javascriptPath & "/" & Trim(loc.item);
-			if (!ListFindNoCase("js,cfm", ListLast(loc.item, ".")))
-				arguments.src = arguments.src & ".js";
-			arguments.src = $assetDomain(arguments.src) & $appendQueryString();
+			loc.item = arguments.sources[loc.i];
+			if (ReFindNoCase("^https?:\/\/", loc.item))
+			{
+				arguments.src = arguments.sources[loc.i];
+			}
+			else
+			{
+				arguments.src = application.wheels.webPath & application.wheels.javascriptPath & "/" & loc.item;
+				if (!ListFindNoCase("js,cfm", ListLast(loc.item, ".")))
+					arguments.src = arguments.src & ".js";
+				arguments.src = $assetDomain(arguments.src) & $appendQueryString();
+			}
 			loc.returnValue = loc.returnValue & $element(name="script", skip="sources,head", attributes=arguments) & chr(10);
 		}
 		if (arguments.head)
@@ -74,20 +104,33 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="imageTag" returntype="string" access="public" output="false" hint="Returns an `img` tag and will (if the image is stored in the local `images` folder) set the `width`, `height`, and `alt` attributes automatically for you."
+<cffunction name="imageTag" returntype="string" access="public" output="false" hint="Returns an `img` tag. If the image is stored in the local `images` folder, the tag will also set the `width`, `height`, and `alt` attributes for you. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
+		<!--- Outputs an `img` tag for `images/logo.png` --->
 		##imageTag("logo.png")##
+		
+		<!--- Outputs an `img` tag for `http://cfwheels.org/images/logo.png` --->
+		##imageTag("http://cfwheels.org/images/logo.png", alt="ColdFusion on Wheels")##
+		
+		<!--- Outputs an `img` tag with the `class` attribute set --->
+		##imageTag(source="logo.png", class="logo")##
 	'
 	categories="view-helper,assets" chapters="miscellaneous-helpers" functions="javaScriptIncludeTag,styleSheetLinkTag">
 	<cfargument name="source" type="string" required="true" hint="The file name of the image if it's availabe in the local file system (i.e. ColdFusion will be able to access it). Provide the full URL if the image is on a remote server.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="imageTag", reserved="src", input=arguments);
+		$args(name="imageTag", reserved="src", args=arguments);
+		// ugly fix due to the fact that id can't be passed along to cfinvoke
+		if (StructKeyExists(arguments, "id"))
+		{
+			arguments.wheelsId = arguments.id;
+			StructDelete(arguments, "id");
+		}
 		if (application.wheels.cacheImages)
 		{
 			loc.category = "image";
-			loc.key = $hashStruct(arguments);
+			loc.key = $hashedKey(arguments);
 			loc.lockName = loc.category & loc.key;
 			loc.conditionArgs = {};
 			loc.conditionArgs.category = loc.category;
@@ -95,16 +138,15 @@
 			loc.executeArgs = arguments;
 			loc.executeArgs.category = loc.category;
 			loc.executeArgs.key = loc.key;
-			if (StructKeyExists(arguments, "id"))
-				loc.executeArgs.wheelsId = arguments.id; // ugly fix due to the fact that id can't be passed along to cfinvoke
 			loc.returnValue = $doubleCheckedLock(name=loc.lockName, condition="$getFromCache", execute="$addImageTagToCache", conditionArgs=loc.conditionArgs, executeArgs=loc.executeArgs);
-			if (StructKeyExists(arguments, "id"))
-				loc.returnValue = ReplaceNoCase(loc.returnValue, "wheelsId", "id"); // ugly fix, see above
 		}
 		else
 		{
 			loc.returnValue = $imageTag(argumentCollection=arguments);
 		}
+		// ugly fix continued
+		if (StructKeyExists(arguments, "wheelsId"))
+			loc.returnValue = ReplaceNoCase(loc.returnValue, "wheelsId", "id");
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
@@ -137,7 +179,7 @@
 			{
 				if (loc.localFile && !FileExists(ExpandPath(arguments.src)))
 					$throw(type="Wheels.ImageFileNotFound", message="Wheels could not find `#expandPath('#arguments.src#')#` on the local file system.", extendedInfo="Pass in a correct relative path from the `images` folder to an image.");
-				else if (!ListFindNoCase(GetReadableImageFormats(),ListLast(arguments.source,".")))
+				else if (!IsImageFile(ExpandPath(arguments.src)))
 					$throw(type="Wheels.ImageFormatNotSupported", message="Wheels can't read image files with that format.", extendedInfo="Use one of these image types instead: #GetReadableImageFormats()#.");
 			}
 			// height and/or width arguments are missing so use cfimage to get them

@@ -17,7 +17,7 @@
 	application.wheels.dataSourcePassword = "";
 	application.wheels.transactionMode = "commit"; // use 'commit', 'rollback' or 'none' to set default transaction handling for creates, updates and deletes
 
-	// settings that depend on the environment
+	// cache settings
 	application.wheels.cacheDatabaseSchema = false;
 	application.wheels.cacheFileChecking = false;
 	application.wheels.cacheImages = false;
@@ -28,17 +28,7 @@
 	application.wheels.cachePages = false;
 	application.wheels.cachePartials = false;
 	application.wheels.cacheQueries = false;
-	application.wheels.showDebugInformation = true;
-	application.wheels.showErrorInformation = true;
-	application.wheels.sendEmailOnError = false;
-	application.wheels.errorEmailAddress = "";
-	application.wheels.errorEmailSubject = "Error";
-	application.wheels.assetQueryString = false;
-	// assetPaths can be struct with two keys,  http and https, if no https struct key, http is used for secure and non-secure
-	// ex. {http="asset0.domain1.com,asset2.domain1.com,asset3.domain1.com", https="secure.domain1.com"}
-	application.wheels.assetPaths = false;
-
-	// override settings for specific environments
+	application.wheels.cachePlugins = true;
 	if (application.wheels.environment != "design")
 	{
 		application.wheels.cacheDatabaseSchema = true;
@@ -54,18 +44,33 @@
 		application.wheels.cachePages = true;
 		application.wheels.cachePartials = true;
 		application.wheels.cacheQueries = true;
-		application.wheels.showDebugInformation = false;
-		application.wheels.assetQueryString = true;
 	}
+
+	// debugging and error settings
+	application.wheels.showDebugInformation = true;
+	application.wheels.showErrorInformation = true;
+	application.wheels.sendEmailOnError = false;
+	application.wheels.errorEmailSubject = "Error";
+	application.wheels.excludeFromErrorEmail = "";
+	if (request.cgi.server_name Contains ".")
+		application.wheels.errorEmailAddress = "webmaster@" & Reverse(ListGetAt(Reverse(request.cgi.server_name), 2,".")) & "." & Reverse(ListGetAt(Reverse(request.cgi.server_name), 1, "."));
+	else
+		application.wheels.errorEmailAddress = "";
 	if (application.wheels.environment == "production")
 	{
 		application.wheels.showErrorInformation = false;
-		if (request.cgi.server_name Contains ".")
-		{
-			application.wheels.sendEmailOnError = true;
-			application.wheels.errorEmailAddress = "webmaster@" & Reverse(ListGetAt(Reverse(request.cgi.server_name), 2,".")) & "." & Reverse(ListGetAt(Reverse(request.cgi.server_name), 1, "."));
-		}
+		application.wheels.sendEmailOnError = true;
 	}
+	if (application.wheels.environment != "design" && application.wheels.environment != "development")
+		application.wheels.showDebugInformation = false;
+
+	// asset path settings
+	// assetPaths can be struct with two keys,  http and https, if no https struct key, http is used for secure and non-secure
+	// ex. {http="asset0.domain1.com,asset2.domain1.com,asset3.domain1.com", https="secure.domain1.com"}
+	application.wheels.assetQueryString = false;
+	application.wheels.assetPaths = false;
+	if (application.wheels.environment != "design" && application.wheels.environment != "development")
+		application.wheels.assetQueryString = true;
 
 	// paths
 	application.wheels.controllerPath = "controllers";
@@ -84,31 +89,46 @@
 	application.wheels.loadDefaultRoutes = true;
 	application.wheels.automaticValidations = true;
 	application.wheels.setUpdatedAtOnCreate = true;
-	application.wheels.useExpandedColumnAliases = true;
+	application.wheels.useExpandedColumnAliases = false;
+
+	// if session management is enabled in the application we default to storing flash data in the session scope, if not we use a cookie
+	if (StructKeyExists(this, "sessionManagement") && this.sessionManagement)
+		application.wheels.flashStorage = "session";
+	else
+		application.wheels.flashStorage = "cookie";
 
 	// caching settings
 	application.wheels.maximumItemsToCache = 5000;
 	application.wheels.cacheCullPercentage = 10;
 	application.wheels.cacheCullInterval = 5;
+	application.wheels.cacheDatePart = "n";
 	application.wheels.defaultCacheTime = 60;
 	application.wheels.clearQueryCacheOnReload = true;
+	application.wheels.cacheQueriesDuringRequest = true;
+	
+	// possible formats for provides
+	application.wheels.formats = {};
+	application.wheels.formats.html = "text/html";
+	application.wheels.formats.xml = "text/xml";
+	application.wheels.formats.json = "text/json";
+	application.wheels.formats.csv = "text/csv";
+	application.wheels.formats.pdf = "application/pdf";
+	application.wheels.formats.xls = "application/vnd.ms-excel";
 
 	// function defaults
 	application.wheels.functions = {};
-	application.wheels.functions.$location = {delay=false};
-	application.wheels.functions.autoLink = {domains="com,net,org,info,biz,tv,co.uk,de,ro,it,se,ly,nu"};
 	application.wheels.functions.average = {distinct=false, parameterize=true, ifNull=""};
 	application.wheels.functions.belongsTo = {joinType="inner"};
 	application.wheels.functions.buttonTo = {onlyPath=true, host="", protocol="", port=0, text="", confirm="", image="", disable=""};
 	application.wheels.functions.buttonTag = {type="submit", value="save", content="Save changes", image="", disable=""};
 	application.wheels.functions.caches = {time=60, static=false};
-	application.wheels.functions.checkBox = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", checkedValue=1, unCheckedValue=0};
+	application.wheels.functions.checkBox = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", checkedValue=1, unCheckedValue=0};
 	application.wheels.functions.checkBoxTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", value=1};
 	application.wheels.functions.count = {parameterize=true};
 	application.wheels.functions.create = {parameterize=true, reload=false};
-	application.wheels.functions.dateSelect = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, order="month,day,year", separator=" ", startYear=Year(Now())-5, endYear=Year(Now())+5, monthDisplay="names"};
+	application.wheels.functions.dateSelect = {label=false, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, order="month,day,year", separator=" ", startYear=Year(Now())-5, endYear=Year(Now())+5, monthDisplay="names"};
 	application.wheels.functions.dateSelectTags = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false, order="month,day,year", separator=" ", startYear=Year(Now())-5, endYear=Year(Now())+5, monthDisplay="names"};
-	application.wheels.functions.dateTimeSelect = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, dateOrder="month,day,year", dateSeparator=" ", startYear=Year(Now())-5, endYear=Year(Now())+5, monthDisplay="names", timeOrder="hour,minute,second", timeSeparator=":", minuteStep=1, separator=" - "};
+	application.wheels.functions.dateTimeSelect = {label=false, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, dateOrder="month,day,year", dateSeparator=" ", startYear=Year(Now())-5, endYear=Year(Now())+5, monthDisplay="names", timeOrder="hour,minute,second", timeSeparator=":", minuteStep=1, separator=" - "};
 	application.wheels.functions.dateTimeSelectTags = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false, dateOrder="month,day,year", dateSeparator=" ", startYear=Year(Now())-5, endYear=Year(Now())+5, monthDisplay="names", timeOrder="hour,minute,second", timeSeparator=":", minuteStep=1, separator=" - "};
 	application.wheels.functions.daySelectTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false};
 	application.wheels.functions.delete = {parameterize=true};
@@ -116,20 +136,22 @@
 	application.wheels.functions.deleteByKey = {reload=false};
 	application.wheels.functions.deleteOne = {reload=false};
 	application.wheels.functions.distanceOfTimeInWords = {includeSeconds=false};
-	application.wheels.functions.errorMessageOn = {prependText="", appendText="", wrapperElement="span", class="error-message"};
-	application.wheels.functions.errorMessagesFor = {class="error-messages", showDuplicates=true};
+	application.wheels.functions.errorMessageOn = {prependText="", appendText="", wrapperElement="span", class="errorMessage"};
+	application.wheels.functions.errorMessagesFor = {class="errorMessages", showDuplicates=true};
 	application.wheels.functions.exists = {reload=false, parameterize=true};
-	application.wheels.functions.fileField = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
+	application.wheels.functions.fileField = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
 	application.wheels.functions.fileFieldTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel=""};
 	application.wheels.functions.findAll = {reload=false, parameterize=true, perPage=10, order="", group="", returnAs="query", returnIncluded=true};
 	application.wheels.functions.findByKey = {reload=false, parameterize=true, returnAs="object"};
 	application.wheels.functions.findOne = {reload=false, parameterize=true, returnAs="object"};
-	application.wheels.functions.hasMany = {joinType="outer"};
-	application.wheels.functions.hasOne = {joinType="outer"};
+	application.wheels.functions.flashKeep = {};
+	application.wheels.functions.flashMessages = {class="flashMessages", includeEmptyContainer="false", lowerCaseDynamicClassValues=false};
+	application.wheels.functions.hasMany = {joinType="outer", dependent=false};
+	application.wheels.functions.hasOne = {joinType="outer", dependent=false};
 	application.wheels.functions.hiddenField = {};
 	application.wheels.functions.hourSelectTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false};
 	application.wheels.functions.imageTag = {};
-	application.wheels.functions.includePartial = {layout="", spacer=""};
+	application.wheels.functions.includePartial = {layout="", spacer="", dataFunction=true};
 	application.wheels.functions.javaScriptIncludeTag = {type="text/javascript", head=false};
 	application.wheels.functions.linkTo = {onlyPath=true, host="", protocol="", port=0};
 	application.wheels.functions.mailTo = {encode=false};
@@ -137,18 +159,20 @@
 	application.wheels.functions.minimum = {parameterize=true, ifNull=""};
 	application.wheels.functions.minuteSelectTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false, minuteStep=1};
 	application.wheels.functions.monthSelectTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false, monthDisplay="names"};
+	application.wheels.functions.nestedProperties = {autoSave=true, allowDelete=false, sortProperty="", rejectIfBlank=""};
 	application.wheels.functions.paginationLinks = {windowSize=2, alwaysShowAnchors=true, anchorDivider=" ... ", linkToCurrentPage=false, prepend="", append="", prependToPage="", prependOnFirst=true, prependOnAnchor=true, appendToPage="", appendOnLast=true, appendOnAnchor=true, classForCurrent="", name="page", showSinglePage=false, pageNumberAsParam=true};
-	application.wheels.functions.passwordField = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
+	application.wheels.functions.passwordField = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
 	application.wheels.functions.passwordFieldTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel=""};
-	application.wheels.functions.radioButton = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
+	application.wheels.functions.radioButton = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
 	application.wheels.functions.radioButtonTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel=""};
 	application.wheels.functions.redirectTo = {onlyPath=true, host="", protocol="", port=0, addToken=false, statusCode=302, delay=false};
-	application.wheels.functions.renderPage = {layout=true};
+	application.wheels.functions.renderPage = {layout=""};
+	application.wheels.functions.renderWith = {layout=""};
 	application.wheels.functions.renderPageToString = {layout=true};
-	application.wheels.functions.renderPartial = {layout=""};
+	application.wheels.functions.renderPartial = {layout="", dataFunction=true};
 	application.wheels.functions.save = {parameterize=true, reload=false};
-	application.wheels.functions.secondSelectTag = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false};
-	application.wheels.functions.select = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, valueField="", textField=""};
+	application.wheels.functions.secondSelectTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false};
+	application.wheels.functions.select = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, valueField="", textField=""};
 	application.wheels.functions.selectTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false, multiple=false, valueField="", textField=""};
 	application.wheels.functions.sendEmail = {layout=false, detectMultipart=true};
 	application.wheels.functions.sendFile = {disposition="attachment"};
@@ -156,12 +180,12 @@
 	application.wheels.functions.styleSheetLinkTag = {type="text/css", media="all", head=false};
 	application.wheels.functions.submitTag = {value="Save changes", image="", disable=""};
 	application.wheels.functions.sum = {distinct=false, parameterize=true, ifNull=""};
-	application.wheels.functions.textArea = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
+	application.wheels.functions.textArea = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
 	application.wheels.functions.textAreaTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel=""};
-	application.wheels.functions.textField = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
+	application.wheels.functions.textField = {label="useDefaultLabel", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span"};
 	application.wheels.functions.textFieldTag = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel=""};
 	application.wheels.functions.timeAgoInWords = {includeSeconds=false};
-	application.wheels.functions.timeSelect = {label=true, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, order="hour,minute,second", separator=":", minuteStep=1};
+	application.wheels.functions.timeSelect = {label=false, labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", errorElement="span", includeBlank=false, order="hour,minute,second", separator=":", minuteStep=1};
 	application.wheels.functions.timeSelectTags = {label="", labelPlacement="around", prepend="", append="", prependToLabel="", appendToLabel="", includeBlank=false, order="hour,minute,second", separator=":", minuteStep=1};
 	application.wheels.functions.timeUntilInWords = {includeSeconds=false};
 	application.wheels.functions.toggle = {save=true};

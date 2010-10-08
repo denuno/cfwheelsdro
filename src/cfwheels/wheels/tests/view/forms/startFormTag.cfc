@@ -1,7 +1,7 @@
 <cfcomponent extends="wheelsMapping.test">
 
 	<cffunction name="setup">
-		<cfset loc.controller = $controller(name="dummy")>
+		<cfset loc.controller = controller(name="dummy")>
 		<cfset loc.args= {}>
 		<cfset loc.args.host = "">
 		<cfset loc.args.method = "post">
@@ -57,6 +57,14 @@
 		<cfset loc.args.route = "home">
 		<cfset loc.argsction = loc.controller.toXHTML(loc.controller.urlfor(argumentCollection=loc.args))>
 		<cfset loc.e = '<form action="#loc.argsction#" method="post">'>
+		<cfset loc.r = loc.controller.startFormTag(argumentcollection=loc.args)>
+		<cfset assert("loc.e eq loc.r")>
+	</cffunction>
+
+	<cffunction name="test_external_link">
+		<cfset loc.args.action = "https://www.cfwheels.com">
+		<cfset loc.args.multipart = true>
+		<cfset loc.e = '<form action="https://www.cfwheels.com" enctype="multipart/form-data" method="post">'>
 		<cfset loc.r = loc.controller.startFormTag(argumentcollection=loc.args)>
 		<cfset assert("loc.e eq loc.r")>
 	</cffunction>

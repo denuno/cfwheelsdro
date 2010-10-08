@@ -1,4 +1,4 @@
-<cffunction name="$processAction" returntype="void" access="public" output="false">
+<cffunction name="$processAction" returntype="boolean" access="public" output="false">
 	<cfscript>
 		var loc = {};
 		loc.debug = application.wheels.showDebugInformation;
@@ -6,17 +6,14 @@
 			$debugPoint("beforeFilters");
 		// run verifications and before filters if they exist on the controller
 		this.$runVerifications(action=params.action, params=params);
+		// return immediately if an abort is issue from a verification
+		if ($abortIssued())
+			return true;
 		this.$runFilters(type="before", action=params.action);
 		
 		// check to see if the controller params has changed and if so, instantiate the new controller and re-run filters and verifications
-		if (params.controller != this.controllerName())
-		{
-			this = $controller(params.controller).$createControllerObject(params);
-			if (loc.debug)
-				$debugPoint("beforeFilters");
-			this.$processAction();
-			return;
-		}
+		if (params.controller != variables.$class.name)
+			return false;
 		
 		if (loc.debug)
 			$debugPoint("beforeFilters,action");
@@ -43,7 +40,7 @@
 			if (loc.actionIsCachable)
 			{
 				loc.category = "action";
-				loc.key = $cacheKey();
+				loc.key = $hashedKey(request.cgi.http_host, variables.$class.name, variables.params);
 				loc.lockName = loc.category & loc.key;
 				loc.conditionArgs = {};
 				loc.conditionArgs.key = loc.key;
@@ -56,7 +53,7 @@
 				loc.executeArgs.static = loc.static;
 				loc.executeArgs.category = loc.category;
 				// get content from the cache if it exists there and set it to the request scope, if not the $callActionAndAddToCache function will run, caling the controller action (which in turn sets the content to the request scope)
-				request.wheels.response = $doubleCheckedLock(name=loc.lockName, condition="$getFromCache", execute="$callActionAndAddToCache", conditionArgs=loc.conditionArgs, executeArgs=loc.executeArgs);
+				variables.$instance.response = $doubleCheckedLock(name=loc.lockName, condition="$getFromCache", execute="$callActionAndAddToCache", conditionArgs=loc.conditionArgs, executeArgs=loc.executeArgs);
 			}
 			else
 			{
@@ -72,7 +69,7 @@
 		if (loc.debug)
 			$debugPoint("afterFilters");
 	</cfscript>
-	<cfreturn />
+	<cfreturn true />
 </cffunction>
 
 <cffunction name="$callAction" returntype="void" access="public" output="false">
@@ -89,10 +86,10 @@
 		}
 		else if (StructKeyExists(this, "onMissingMethod"))
 		{
-			loc.argumentCollection = {};
-			loc.argumentCollection.missingMethodName = arguments.action;
-			loc.argumentCollection.missingMethodArguments = {};
-			$invoke(method="onMissingMethod", argumentCollection=loc.argumentCollection);
+			loc.invokeArgs = {};
+			loc.invokeArgs.missingMethodName = arguments.action;
+			loc.invokeArgs.missingMethodArguments = {};
+			$invoke(method="onMissingMethod", invokeArgs=loc.invokeArgs);
 		}
 
 		if (!$performedRenderOrRedirect())
@@ -103,7 +100,7 @@
 			}
 			catch(Any e)
 			{
-				if (FileExists(ExpandPath("#application.wheels.viewPath#/#LCase(variables.wheels.name)#/#LCase(arguments.action)#.cfm")))
+				if (FileExists(ExpandPath("#application.wheels.viewPath#/#LCase(variables.$class.name)#/#LCase(arguments.action)#.cfm")))
 				{
 					$throw(object=e);
 				}
@@ -111,7 +108,7 @@
 				{
 					if (application.wheels.showErrorInformation)
 					{
-						$throw(type="Wheels.ViewNotFound", message="Could not find the view page for the `#arguments.action#` action in the `#variables.wheels.name#` controller.", extendedInfo="Create a file named `#LCase(arguments.action)#.cfm` in the `views/#LCase(variables.wheels.name)#` directory (create the directory as well if it doesn't already exist).");
+						$throw(type="Wheels.ViewNotFound", message="Could not find the view page for the `#arguments.action#` action in the `#variables.$class.name#` controller.", extendedInfo="Create a file named `#LCase(arguments.action)#.cfm` in the `views/#LCase(variables.$class.name)#` directory (create the directory as well if it doesn't already exist).");
 					}
 					else
 					{
@@ -134,9 +131,9 @@
 	<cfscript>
 		$callAction(action=arguments.action);
 		if (arguments.static)
-			$cache(cache="serverCache", timeSpan=CreateTimeSpan(0,0,arguments.time,0));
+			$cache(cache="serverCache", timeSpan=$timeSpanForCache(arguments.time));
 		else
-			$addToCache(key=arguments.key, value=request.wheels.response, time=arguments.time, category=arguments.category);
+			$addToCache(key=arguments.key, value=variables.$instance.response, time=arguments.time, category=arguments.category);
 	</cfscript>
-	<cfreturn request.wheels.response>
+	<cfreturn response()>
 </cffunction>

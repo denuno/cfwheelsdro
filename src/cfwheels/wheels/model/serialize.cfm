@@ -1,8 +1,8 @@
 <cffunction name="$serializeQueryToObjects" access="public" output="false" returntype="any">
 	<cfargument name="query" type="query" required="true" />
-	<cfargument name="include" type="string" required="true" />
-	<cfargument name="callbacks" type="string" required="true" />
-	<cfargument name="returnIncluded" type="string" required="true" />
+	<cfargument name="include" type="string" required="false" default="" />
+	<cfargument name="callbacks" type="string" required="false" default="true" />
+	<cfargument name="returnIncluded" type="string" required="false" default="true" />
 	<cfscript>
 		var loc = {};
 		// grab our objects as structs first so we don't waste cpu creating objects we don't need
@@ -72,7 +72,7 @@
 		{
 			// create a new struct
 			loc.struct = $queryRowToStruct(properties=arguments.query, row=loc.i);
-			loc.structHash = $hashStruct(loc.struct);
+			loc.structHash = $hashedKey(loc.struct);
 			if (!ListFind(loc.doneStructs, loc.structHash, Chr(7)))
 			{
 				if (Len(arguments.include) && arguments.returnIncluded)
@@ -96,16 +96,16 @@
 								// is there anything we can do here to not instantiate an object if it is not going to be use or is already created
 								// this extra instantiation is really slowing things down
 								loc.hasManyStruct = loc.model.$queryRowToStruct(properties=arguments.query, row=loc.j, base=false);
-								loc.hasManyStructHash = $hashStruct(loc.hasManyStruct);
+								loc.hasManyStructHash = $hashedKey(loc.hasManyStruct);
 								
 								if (!ListFind(loc.hasManyDoneStructs, loc.hasManyStructHash, Chr(7)))
 								{
 									// create object instance from values in current query row if it belongs to the current object
 									loc.primaryKeyColumnValues = "";
-									loc.kEnd = ListLen(variables.wheels.class.keys);
+									loc.kEnd = ListLen(primaryKeys());
 									
 									for (loc.k=1; loc.k <= loc.kEnd; loc.k++)
-										loc.primaryKeyColumnValues = ListAppend(loc.primaryKeyColumnValues, arguments.query[ListGetAt(variables.wheels.class.keys, loc.k)][loc.j]);
+										loc.primaryKeyColumnValues = ListAppend(loc.primaryKeyColumnValues, arguments.query[primaryKeys(loc.k)][loc.j]);
 
 									if (Len(loc.model.$keyFromStruct(loc.hasManyStruct)) && this.$keyFromStruct(loc.struct) == loc.primaryKeyColumnValues)
 										ArrayAppend(loc.struct[loc.include], loc.hasManyStruct);
@@ -164,10 +164,10 @@
 	<cfscript>
 		var loc = {};
 		loc.returnValue = "";
-		loc.iEnd = ListLen(variables.wheels.class.keys);
+		loc.iEnd = ListLen(primaryKeys());
 		for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 		{
-			loc.property = ListGetAt(variables.wheels.class.keys, loc.i);
+			loc.property = primaryKeys(loc.i);
 			if (StructKeyExists(arguments.struct, loc.property))
 				loc.returnValue = ListAppend(loc.returnValue, arguments.struct[loc.property]);
 		}

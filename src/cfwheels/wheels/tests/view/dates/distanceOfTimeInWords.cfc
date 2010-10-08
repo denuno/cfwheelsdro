@@ -1,7 +1,7 @@
 <cfcomponent extends="wheelsMapping.test">
 
 	<cffunction name="setup">
-		<cfset loc.controller = $controller(name="dummy")>
+		<cfset loc.controller = controller(name="dummy")>
 		<cfset loc.f = "distanceOfTimeInWords">
 		<cfset loc.args = {}>
 		<cfset loc.args.fromTime = now()>
@@ -19,7 +19,7 @@
 	<cffunction name="test_with_seconds_below_10_seconds">
 		<cfset loc.c = 10 - 1>
 		<cfset loc.args.toTime = dateadd('s', loc.c, loc.args.fromTime)>
-		<cfset halt(false, "loc.controller.distanceOfTimeInWords(argumentcollection=loc.args)")>
+		<cfset debug("loc.controller.distanceOfTimeInWords(argumentcollection=loc.args)", false)>
 		<cfinvoke component="#loc.controller#" method="#loc.f#" argumentcollection="#loc.args#" returnvariable="loc.e">
 		<cfset loc.r = "less than 10 seconds">
 		<cfset assert("loc.e eq loc.r")>
@@ -54,6 +54,15 @@
 		<cfset loc.args.toTime = dateadd('s', loc.c, loc.args.fromTime)>
 		<cfinvoke component="#loc.controller#" method="#loc.f#" argumentcollection="#loc.args#" returnvariable="loc.e">
 		<cfset loc.r = "1 minute">
+		<cfset assert("loc.e eq loc.r")>
+	</cffunction>
+
+	<cffunction name="test_without_seconds_below_60_seconds">
+		<cfset loc.args.includeSeconds = false>
+		<cfset loc.c = 60 - 1>
+		<cfset loc.args.toTime = dateadd('s', loc.c, loc.args.fromTime)>
+		<cfinvoke component="#loc.controller#" method="#loc.f#" argumentcollection="#loc.args#" returnvariable="loc.e">
+		<cfset loc.r = "less than a minute">
 		<cfset assert("loc.e eq loc.r")>
 	</cffunction>
 
@@ -132,12 +141,30 @@
 		<cfset assert("loc.e eq loc.r")>
 	</cffunction>
 
+	<cffunction name="test_without_seconds_below_657000_minutes">
+		<cfset loc.args.includeSeconds = false>
+		<cfset loc.c = 657000 - 1>
+		<cfset loc.args.toTime = dateadd('n', loc.c, loc.args.fromTime)>
+		<cfinvoke component="#loc.controller#" method="#loc.f#" argumentcollection="#loc.args#" returnvariable="loc.e">
+		<cfset loc.r = "about 1 year">
+		<cfset assert("loc.e eq loc.r")>
+	</cffunction>
+
+	<cffunction name="test_without_seconds_below_919800_minutes">
+		<cfset loc.args.includeSeconds = false>
+		<cfset loc.c = 919800 - 1>
+		<cfset loc.args.toTime = dateadd('n', loc.c, loc.args.fromTime)>
+		<cfinvoke component="#loc.controller#" method="#loc.f#" argumentcollection="#loc.args#" returnvariable="loc.e">
+		<cfset loc.r = "over 1 year">
+		<cfset assert("loc.e eq loc.r")>
+	</cffunction>
+
 	<cffunction name="test_without_seconds_below_1051200_minutes">
 		<cfset loc.args.includeSeconds = false>
 		<cfset loc.c = 1051200 - 1>
 		<cfset loc.args.toTime = dateadd('n', loc.c, loc.args.fromTime)>
 		<cfinvoke component="#loc.controller#" method="#loc.f#" argumentcollection="#loc.args#" returnvariable="loc.e">
-		<cfset loc.r = "about 1 year">
+		<cfset loc.r = "almost 2 years">
 		<cfset assert("loc.e eq loc.r")>
 	</cffunction>
 

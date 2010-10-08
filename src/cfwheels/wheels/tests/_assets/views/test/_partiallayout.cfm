@@ -1,5 +1,5 @@
 <cfoutput>
 start:partiallayout
-#contentForLayout()#
+#includeContent()#
 end:partiallayout
 </cfoutput>

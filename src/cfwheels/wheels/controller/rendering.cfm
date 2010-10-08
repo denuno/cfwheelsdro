@@ -1,35 +1,59 @@
 <!--- PUBLIC CONTROLLER REQUEST FUNCTIONS --->
 
-<cffunction name="renderPage" returntype="any" access="public" output="false" hint="Renders content to the browser by including the view page for the specified `controller` and `action`."
+<cffunction name="renderPage" returntype="any" access="public" output="false" hint="Instructs the controller which view template and layout to render when it's finished processing the action. Note that when passing values for `controller` and/or `action`, this function does not load the actual action but rather just loads the corresponding view template."
 	examples=
 	'
-		<!--- Render a view page for a different action than the current one --->
-		<cfset renderPage(action="someOtherAction")>
+		<!--- Render a view page for a different action within the same controller --->
+		<cfset renderPage(action="edit")>
+		
+		<!--- Render a view page for a different action within a different controller --->
+		<cfset renderPage(controller="blog", action="new")>
+		
+		<!--- Another way to render the blog/new template from within a different controller --->
+		<cfset renderPage(template="/blog/new")>
 
 		<!--- Render the view page for the current action but without a layout and cache it for 60 minutes --->
 		<cfset renderPage(layout=false, cache=60)>
+		
+		<!--- Load a layout from a different folder within `views` --->
+		<cfset renderPage(layout="/layouts/blog")>
+		
+		<!--- Don''t render the view immediately but rather return and store in a variable for further processing --->
+		<cfset myView = renderPage(returnAs="string")>
 	'
-	categories="controller-request,rendering" chapters="rendering-pages" functions="renderNothing,renderText,renderPartial">
+	categories="controller-request,rendering" chapters="rendering-pages" functions="renderNothing,renderText,renderPartial,usesLayout">
 	<cfargument name="controller" type="string" required="false" default="#variables.params.controller#" hint="Controller to include the view page for.">
 	<cfargument name="action" type="string" required="false" default="#variables.params.action#" hint="Action to include the view page for.">
-	<cfargument name="template" type="string" required="false" default="" hint="A specific template to render.">
-	<cfargument name="layout" type="any" required="false" hint="The layout to wrap the content in.">
-	<cfargument name="cache" type="any" required="false" default="" hint="Minutes to cache the content for.">
-	<cfargument name="returnAs" type="string" required="false" default="" hint="Set to `string` to return the result to the controller instead of sending it to the browser immediately.">
-	<cfargument name="hideDebugInformation" type="boolean" required="false" default="false" hint="Set to `true` to hide the debug information at the end of the output. This is useful when you're testing XML output in an environment where the global setting for `showDebugInformation` is `true` for example.">
+	<cfargument name="template" type="string" required="false" default="" hint="A specific template to render. Prefix with a leading slash `/` if you need to build a path from the root `views` folder.">
+	<cfargument name="layout" type="any" required="false" hint="The layout to wrap the content in. Prefix with a leading slash `/` if you need to build a path from the root `views` folder. Pass `false` to not load a layout at all.">
+	<cfargument name="cache" type="any" required="false" default="" hint="Number of minutes to cache the content for.">
+	<cfargument name="returnAs" type="string" required="false" default="" hint="Set to `string` to return the result instead of automatically sending it to the client.">
+	<cfargument name="hideDebugInformation" type="boolean" required="false" default="false" hint="Set to `true` to hide the debug information at the end of the output. This is useful when you're testing XML output in an environment where the global setting for `showDebugInformation` is `true`.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="renderPage", input=arguments);
+		$args(name="renderPage", args=arguments);
 		$dollarify(arguments, "controller,action,template,layout,cache,returnAs,hideDebugInformation");
 		if (application.wheels.showDebugInformation)
+		{
 			$debugPoint("view");
+		}
+		
+		// if no layout specific arguments were passed in use the this instance's layout
+		if(!Len(arguments.$layout))
+			arguments.$layout = $useLayout(arguments.$action);
+		
+		// never show debugging out in ajax requests
+		if (isAjax())
+			arguments.$hideDebugInformation = true;	
+		
 		// if renderPage was called with a layout set a flag to indicate that it's ok to show debug info at the end of the request
-		if ((!IsBoolean(arguments.$layout) || arguments.$layout) && !arguments.$hideDebugInformation)
+		if (!arguments.$hideDebugInformation)
 			request.wheels.showDebugInformation = true;
+		
 		if (application.wheels.cachePages && (IsNumeric(arguments.$cache) || (IsBoolean(arguments.$cache) && arguments.$cache)))
 		{
 			loc.category = "action";
-			loc.key = "#arguments.$action##$hashStruct(variables.params)##$hashStruct(arguments)#";
+			loc.key = $hashedKey(arguments, variables.params);
 			loc.lockName = loc.category & loc.key;
 			loc.conditionArgs = {};
 			loc.conditionArgs.category = loc.category;
@@ -46,7 +70,7 @@
 		if (arguments.$returnAs == "string")
 			loc.returnValue = loc.page;
 		else
-			request.wheels.response = loc.page;
+			variables.$instance.response = loc.page;
 		if (application.wheels.showDebugInformation)
 			$debugPoint("view");
 	</cfscript>
@@ -55,54 +79,152 @@
 	</cfif>
 </cffunction>
 
-<cffunction name="renderNothing" returntype="void" access="public" output="false" hint="Renders a blank string to the browser. This is very similar to calling `cfabort` with the advantage that any after filters you have set on the action will still be run."
+<cffunction name="renderNothing" returntype="void" access="public" output="false" hint="Instructs the controller to render an empty string when it's finished processing the action. This is very similar to calling `cfabort` with the advantage that any after filters you have set on the action will still be run."
 	examples=
 	'
-		<!--- Render a blank white page to the browser --->
+		<!--- Render a blank white page to the client --->
 		<cfset renderNothing()>
 	'
 	categories="controller-request,rendering" chapters="rendering-pages" functions="renderPage,renderText,renderPartial">
 	<cfscript>
-		request.wheels.response = "";
+		variables.$instance.response = "";
 	</cfscript>
 </cffunction>
 
-<cffunction name="renderText" returntype="void" access="public" output="false" hint="Renders the specified text to the browser."
+<cffunction name="renderText" returntype="void" access="public" output="false" hint="Instructs the controller to render specified text when it's finished processing the action."
 	examples=
 	'
-		<!--- Render just the text "Done!" to the browser --->
+		<!--- Render just the text "Done!" to the client --->
 		<cfset renderText("Done!")>
+		
+		<!--- Render serialized product data to the client --->
+		<cfset products = model("product").findAll()>
+		<cfset renderText(SerializeJson(products))>
 	'
 	categories="controller-request,rendering" chapters="rendering-pages" functions="renderPage,renderNothing,renderPartial">
 	<cfargument name="text" type="any" required="true" hint="The text to be rendered.">
 	<cfscript>
-		request.wheels.response = arguments.text;
+		variables.$instance.response = arguments.text;
 	</cfscript>
 </cffunction>
 
-<cffunction name="renderPartial" returntype="any" access="public" output="false" hint="Renders content to the browser by including a partial."
+<cffunction name="renderPartial" returntype="any" access="public" output="false" hint="Instructs the controller to render a partial when it's finished processing the action."
 	examples=
 	'
 		<!--- Render the partial `_comment.cfm` located in the current controller''s view folder --->
 		<cfset renderPartial("comment")>
+		
+		<!--- Render the partial at `views/shared/_comment.cfm` --->
+		<cfset renderPartial("/shared/comment")>
 	'
 	categories="controller-request,rendering" chapters="rendering-pages" functions="renderPage,renderNothing,renderText">
-	<cfargument name="partial" type="string" required="true" hint="The name of the file to be used (starting with an optional path and with the underscore and file extension excluded).">
+	<cfargument name="partial" type="string" required="true" hint="The name of the partial file to be used. Prefix with a leading slash `/` if you need to build a path from the root `views` folder. Do not include the partial filename's underscore and file extension.">
 	<cfargument name="cache" type="any" required="false" default="" hint="See documentation for @renderPage.">
 	<cfargument name="layout" type="string" required="false" hint="See documentation for @renderPage.">
 	<cfargument name="returnAs" type="string" required="false" default="" hint="See documentation for @renderPage.">
+	<cfargument name="dataFunction" type="any" required="false" hint="Name of a controller function to load data from.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="renderPartial", input=arguments);
-		loc.partial = $includeOrRenderPartial(argumentCollection=$dollarify(arguments, "partial,cache,layout,returnAs"));
+		$args(name="renderPartial", args=arguments);
+		loc.partial = $includeOrRenderPartial(argumentCollection=$dollarify(arguments, "partial,cache,layout,returnAs,dataFunction"));
 		if (arguments.$returnAs == "string")
-			loc.returnValue = loc.partial;
+			return loc.partial;
 		else
-			request.wheels.response = loc.partial;
+			variables.$instance.response = loc.partial;
 	</cfscript>
-	<cfif StructKeyExists(loc, "returnValue")>
-		<cfreturn loc.returnValue>
-	</cfif>
+</cffunction>
+
+<cffunction name="contentForLayout" returntype="string" access="public" output="false" hint="Includes content for the `body` section, which equates to the output generated by the view template run by the request."
+	examples='
+		<!--- In `views/layout.cfm` --->
+		<html>
+		<head>
+			<title>My Site</title>
+		</head>
+		
+		<body>
+		<cfoutput>##contentForLayout()##</cfoutput>
+		</body>
+		
+		</html>
+	'
+	categories="controller-request,layout" chapters="using-layouts" functions="">
+	<cfreturn includeContent("body")>
+</cffunction>
+
+<cffunction name="includeContent" returntype="string" access="public" output="false" hint="Used to output the content for a particular section in a layout."	
+	examples=
+	'
+		<!--- In your view template, let''s say `views/blog/post.cfm --->
+		<cfset contentFor(head=''<meta name="robots" content="noindex,nofollow" />"'')>
+		<cfset contentFor(head=''<meta name="author" content="wheelsdude@wheelsify.com"'')>
+		
+		<!--- In `views/layout.cfm` --->
+		<html>
+		<head>
+		    <title>My Site</title>
+		    ##includeContent("head")##
+		</head>
+		<body>
+
+		<cfoutput>
+		##includeContent()##
+		</cfoutput>
+
+		</body>
+		</html>
+	'
+	categories="view-helper,miscellaneous" chapters="using-layouts" functions="">
+	<cfargument name="name" type="string" required="false" default="body" hint="Name of layout section to return content for.">
+	<cfargument name="default" type="string" required="false" default="" hint="What to display as a default if the section is not defined.">
+	<cfscript>
+		if (StructKeyExists(variables.$instance.contentFor, arguments.name))
+			return ArrayToList(variables.$instance.contentFor[arguments.name], Chr(10));
+		else
+			return arguments.default;
+	</cfscript>
+</cffunction>
+
+<cffunction name="response" returntype="string" access="public" output="false" hint="Returns content that Wheels will send to the client in response to the request."
+	examples='
+		<!--- In a controller --->
+		<cffunction name="init">
+			<cfset filters(type="after", through="translateResponse")>
+		</cffunction>
+		
+		<!--- After filter translates response and sets it --->
+		<cffunction name="translateResponse">
+			<cfset var wheelsResponse = response()>
+			<cfset var translatedResponse = someTranslationMethod(wheelsResponse)>
+			<cfset setResponse(translatedResponse)>
+		</cffunction>
+	'
+	categories="controller-request,rendering" chapters="" functions="setResponse">
+	<cfscript>
+		if ($performedRender())
+			return Trim(variables.$instance.response);
+		else
+			return "";
+	</cfscript>
+</cffunction>
+
+<cffunction name="setResponse" returntype="void" access="public" output="false" hint="Sets content that Wheels will send to the client in response to the request."
+	examples='
+		<!--- In a controller --->
+		<cffunction name="init">
+			<cfset filters(type="after", through="translateResponse")>
+		</cffunction>
+		
+		<!--- After filter translates response and sets it --->
+		<cffunction name="translateResponse">
+			<cfset var wheelsResponse = response()>
+			<cfset var translatedResponse = someTranslationFunction(wheelsResponse)>
+			<cfset setResponse(translatedResponse)>
+		</cffunction>
+	'
+	categories="controller-request,rendering" chapters="" functions="response">
+	<cfargument name="content" type="string" required="true" hint="The content to set as the response.">
+	<cfset variables.$instance.response = arguments.content>	
 </cffunction>
 
 <!--- PRIVATE FUNCTIONS --->
@@ -119,6 +241,7 @@
 </cffunction>
 
 <cffunction name="$renderPage" returntype="string" access="public" output="false">
+	<cfargument name="$overwrite" type="boolean" required="false" default="false">
 	<cfscript>
 		var loc = {};
 		if (!Len(arguments.$template))
@@ -127,7 +250,7 @@
 		arguments.$name = arguments.$template;
 		arguments.$template = $generateIncludeTemplatePath(argumentCollection=arguments);
 		loc.content = $includeFile(argumentCollection=arguments);
-		loc.returnValue = $renderLayout($content=loc.content, $layout=arguments.$layout, $type=arguments.$type);
+		loc.returnValue = $renderLayout($content=loc.content, $layout=arguments.$layout, $type=arguments.$type, $overwrite=arguments.$overwrite);
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
@@ -143,12 +266,36 @@
 	<cfreturn returnValue>
 </cffunction>
 
+<cffunction name="$argumentsForPartial" returntype="struct" access="public" output="false">
+	<cfscript>
+		var loc = {};
+		if (StructKeyExists(arguments, "$dataFunction") && arguments.$dataFunction != "false")
+		{
+			if (IsBoolean(arguments.$dataFunction))
+			{
+				loc.dataFunction = SpanExcluding(ListLast(arguments.$name, "/"), ".");
+				if (StructKeyExists(variables, loc.dataFunction))
+				{
+					loc.metaData = GetMetaData(variables[loc.dataFunction]);
+					if (IsStruct(loc.metaData) && StructKeyExists(loc.metaData, "returnType") && loc.metaData.returnType == "struct" && StructKeyExists(loc.metaData, "access") && loc.metaData.access == "private")
+						return $invoke(method=loc.dataFunction);
+				}
+			}
+			else
+			{
+				return $invoke(method=arguments.$dataFunction);
+			}
+		}
+		return StructNew();
+	</cfscript>
+</cffunction>
+
 <cffunction name="$renderPartial" returntype="string" access="public" output="false">
 	<cfscript>
 		var loc = {};
 		if (IsQuery(arguments.$partial) && arguments.$partial.recordCount)
 		{
-			arguments.$name = request.wheels[Hash(SerializeJSON(arguments.$partial))];
+			arguments.$name = request.wheels[$hashedKey(arguments.$partial)];
 			arguments.query = arguments.$partial;
 		}
 		else if (IsObject(arguments.$partial))
@@ -169,16 +316,13 @@
 		{
 			arguments.$type = "partial";
 			arguments.$template = $generateIncludeTemplatePath(argumentCollection=arguments);
+			StructAppend(arguments, $argumentsForPartial(argumentCollection=arguments), false);
 			loc.content = $includeFile(argumentCollection=arguments);
-			loc.returnValue = $renderLayout($content=loc.content, $layout=arguments.$layout, $type=arguments.$type);
+			return $renderLayout($content=loc.content, $layout=arguments.$layout, $type=arguments.$type);
 		}
-		else
-		{
-			// when $name has not been set (which means that it's either an empty array or query) we just return an empty string
-			loc.returnValue = "";
-		}
+		// when $name has not been set (which means that it's either an empty array or query) we just return an empty string
+		return "";
 	</cfscript>
-	<cfreturn loc.returnValue>
 </cffunction>
 
 <cffunction name="$includeOrRenderPartial" returntype="string" access="public" output="false">
@@ -187,7 +331,7 @@
 		if (application.wheels.cachePartials && (isNumeric(arguments.$cache) || (IsBoolean(arguments.$cache) && arguments.$cache)))
 		{
 			loc.category = "partial";
-			loc.key = "#$hashStruct(arguments)#";
+			loc.key = $hashedKey(arguments);
 			loc.lockName = loc.category & loc.key;
 			loc.conditionArgs = {};
 			loc.conditionArgs.category = loc.category;
@@ -208,22 +352,24 @@
 <cffunction name="$generateIncludeTemplatePath" returntype="string" access="public" output="false">
 	<cfargument name="$name" type="any" required="true">
 	<cfargument name="$type" type="any" required="true">
+	<cfargument name="$controllerName" type="string" required="false" default="#variables.params.controller#" />
 	<cfargument name="$baseTemplatePath" type="string" required="false" default="#application.wheels.viewPath#" />
+	<cfargument name="$prependWithUnderscore" type="boolean" required="false" default="true">
 	<cfscript>
 		var loc = {};
 		loc.include = arguments.$baseTemplatePath;
-		loc.fileName = Spanexcluding(Reverse(ListFirst(Reverse(arguments.$name), "/")), ".") & ".cfm"; // extracts the file part of the path and replace ending ".cfm"
-		if (arguments.$type == "partial")
+		loc.fileName = ReplaceNoCase(Reverse(ListFirst(Reverse(arguments.$name), "/")), ".cfm", "", "all") & ".cfm"; // extracts the file part of the path and replace ending ".cfm"
+		if (arguments.$type == "partial" && arguments.$prependWithUnderscore)
 			loc.fileName = Replace("_" & loc.fileName, "__", "_", "one"); // replaces leading "_" when the file is a partial
 		loc.folderName = Reverse(ListRest(Reverse(arguments.$name), "/"));
 		if (Left(arguments.$name, 1) == "/")
 			loc.include = loc.include & loc.folderName & "/" & loc.fileName; // Include a file in a sub folder to views
 		else if (arguments.$name Contains "/")
-			loc.include = loc.include & "/" & variables.params.controller & "/" & loc.folderName & "/" & loc.fileName; // Include a file in a sub folder of the current controller
+			loc.include = loc.include & "/" & arguments.$controllerName & "/" & loc.folderName & "/" & loc.fileName; // Include a file in a sub folder of the current controller
 		else
-			loc.include = loc.include & "/" & variables.params.controller & "/" & loc.fileName; // Include a file in the current controller's view folder
+			loc.include = loc.include & "/" & arguments.$controllerName & "/" & loc.fileName; // Include a file in the current controller's view folder
 	</cfscript>
-	<cfreturn loc.include />
+	<cfreturn LCase(loc.include) />
 </cffunction>
 
 <cffunction name="$includeFile" returntype="string" access="public" output="false">
@@ -293,6 +439,7 @@
 					for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 					{
 						arguments.current = loc.i;
+						arguments.totalCount = loc.iEnd;
 						loc.jEnd = ListLen(loc.query.columnList);
 						for (loc.j=1; loc.j <= loc.jEnd; loc.j++)
 						{
@@ -314,28 +461,28 @@
 			}
 			else if (StructKeyExists(arguments, "object") && IsObject(arguments.object))
 			{
-				loc.object = arguments.object;
+				loc.modelName = arguments.object.$classData().modelName;
+				arguments[loc.modelName] = arguments.object;
 				StructDelete(arguments, "object");
-				StructAppend(arguments, loc.object.properties(), false);
+				StructAppend(arguments, arguments[loc.modelName].properties(), false);
 			}
 			else if (StructKeyExists(arguments, "objects") && IsArray(arguments.objects))
 			{
-				loc.originalArguments = Duplicate(arguments);
 				loc.array = arguments.objects;
 				StructDelete(arguments, "objects");
+				loc.originalArguments = Duplicate(arguments);
+				loc.modelName = loc.array[1].$classData().modelName;
 				loc.returnValue = "";
 				loc.iEnd = ArrayLen(loc.array);
 				for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 				{
+					StructClear(arguments);
+					StructAppend(arguments, loc.originalArguments);
 					arguments.current = loc.i;
+					arguments.totalCount = loc.iEnd;
+					arguments[loc.modelName] = loc.array[loc.i];
 					loc.properties = loc.array[loc.i].properties();
-
-					// we have to overwrite the values in each loop but first we remove the ones that are in the original arguments since they take precedence
-					for (loc.key in loc.originalArguments)
-						if (StructKeyExists(loc.properties, loc.key))
-							StructDelete(loc.properties, loc.key);
 					StructAppend(arguments, loc.properties, true);
-
 					loc.returnValue = loc.returnValue & $includeAndReturnOutput(argumentCollection=arguments);
 					if (StructKeyExists(arguments, "$spacer") && loc.i < loc.iEnd)
 						loc.returnValue = loc.returnValue & arguments.$spacer;
@@ -348,63 +495,27 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="$renderLayout" returntype="string" access="public" output="false">
-	<cfargument name="$content" type="string" required="true">
-	<cfargument name="$layout" type="any" required="true">
-	<cfscript>
-		var loc = {};
-		if ((IsBoolean(arguments.$layout) && arguments.$layout) || (!IsBoolean(arguments.$layout) && Len(arguments.$layout)))
-		{
-			request.wheels.contentForLayout = arguments.$content; // store the content in a variable in the request scope so it can be accessed by the contentForLayout function that the developer uses in layout files (this is done so we avoid passing data to/from it since it would complicate things for the developer)
-			loc.include = application.wheels.viewPath;
-			if (IsBoolean(arguments.$layout))
-			{
-				loc.layoutFileExists = false;
-				if (!ListFindNoCase(application.wheels.existingLayoutFiles, variables.params.controller) && !ListFindNoCase(application.wheels.nonExistingLayoutFiles, variables.params.controller))
-				{
-					if (FileExists(ExpandPath("#application.wheels.viewPath#/#LCase(variables.params.controller)#/layout.cfm")))
-						loc.layoutFileExists = true;
-					if (application.wheels.cacheFileChecking)
-					{
-						if (loc.layoutFileExists)
-							application.wheels.existingLayoutFiles = ListAppend(application.wheels.existingLayoutFiles, variables.params.controller);
-						else
-							application.wheels.nonExistingLayoutFiles = ListAppend(application.wheels.nonExistingLayoutFiles, variables.params.controller);
-					}
-				}
-				if (ListFindNoCase(application.wheels.existingLayoutFiles, variables.params.controller) || loc.layoutFileExists)
-				{
-					loc.include = loc.include & "/" & variables.params.controller & "/" & "layout.cfm";
-				}
-				else
-				{
-					loc.include = loc.include & "/" & "layout.cfm";
-				}
-				loc.returnValue = $includeAndReturnOutput($template=loc.include);
-			}
-			else
-			{
-				arguments.$name = arguments.$layout;
-				arguments.$template = $generateIncludeTemplatePath(argumentCollection=arguments);
-				loc.returnValue = $includeFile(argumentCollection=arguments);
-			}
-		}
-		else
-		{
-			loc.returnValue = arguments.$content;
-		}
-	</cfscript>
-	<cfreturn loc.returnValue>
-</cffunction>
-
 <cffunction name="$performedRenderOrRedirect" returntype="boolean" access="public" output="false">
 	<cfreturn ($performedRender() || $performedRedirect())>
 </cffunction>
 
 <cffunction name="$performedRender" returntype="boolean" access="public" output="false">
-	<cfreturn StructKeyExists(request.wheels, "response")>
+	<cfreturn StructKeyExists(variables.$instance, "response")>
 </cffunction>
 
 <cffunction name="$performedRedirect" returntype="boolean" access="public" output="false">
-	<cfreturn StructKeyExists(request.wheels, "redirect")>
+	<cfreturn StructKeyExists(variables.$instance, "redirect")>
+</cffunction>
+
+<cffunction name="$abortIssued" returntype="boolean" access="public" output="false">
+	<cfreturn StructKeyExists(variables.$instance, "abort")>
+</cffunction>
+
+<cffunction name="$getRedirect" returntype="struct" access="public" output="false">
+	<cfscript>
+		if ($performedRedirect())
+			return variables.$instance.redirect;
+		else
+			return StructNew();
+	</cfscript>
 </cffunction>

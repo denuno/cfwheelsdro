@@ -1,24 +1,25 @@
-<cffunction name="invokeWithTransaction" returntype="any" access="public" output="false" hint="Runs the specified method with a single database transaction"
+<cffunction name="invokeWithTransaction" returntype="any" access="public" output="false" hint="Runs the specified method within a single database transaction."
 	examples=
 	'
-		<!--- this is the method to be run inside a transaction --->
+		<!--- This is the method to be run inside a transaction --->
 		<cffunction name="tranferFunds" returntype="boolean" output="false">
 			<cfargument name="personFrom">
 			<cfargument name="personTo">
 			<cfargument name="amount">
 			<cfif arguments.personFrom.withdraw(arguments.amount) and arguments.personTo.deposit(arguments.amount)>
 				<cfreturn true>
+			<cfelse>
+				<cfreturn false>
 			</cfif>
-			<cfreturn false>
 		</cffunction>
 		
-		<cfset david = model("Person").findByName("David")>
-		<cfset mary = model("Person").findByName("Mary")>
+		<cfset david = model("Person").findOneByName("David")>
+		<cfset mary = model("Person").findOneByName("Mary")>
 		<cfset invokeWithTransaction(method="transferFunds", personFrom=david, personTo=mary, amount=100)>
 	'
 	categories="model-class" chapters="transactions" functions="new,create,save,update,updateByKey,updateOne,updateAll,delete,deleteByKey,deleteOne,deleteAll">
 	<cfargument name="method" type="string" required="true" hint="Model method to run.">
-	<cfargument name="transaction" type="string" required="true" hint="See documentation for @save.">
+	<cfargument name="transaction" type="string" default="commit" hint="See documentation for @save.">
 	<cfargument name="isolation" type="string" default="read_committed" hint="See documentation for @save.">
 	<cfset var loc = {} />
 	<cfset loc.methodArgs = $setProperties(properties=StructNew(), argumentCollection=arguments, filterList="method,transaction,isolation", setOnModel=false, $useFilterLists=false)>
@@ -30,8 +31,8 @@
 	</cfif>
 	<cfif $openTransaction(arguments.transaction)>
 		<cftransaction action="begin" isolation="#arguments.isolation#">
-			<cfset loc.returnValue = $invoke(method=arguments.method, componentReference=this, argumentCollection=loc.methodArgs) />
-			<cfif not IsBoolean(loc.returnValue)>
+			<cfset loc.returnValue = $invoke(method=arguments.method, componentReference=this, invokeArgs=loc.methodArgs) />
+			<cfif not StructKeyExists(loc, "returnValue") or not IsBoolean(loc.returnValue)>
 				<cfset $throw(type="Wheels", message="Invalid return type", extendedInfo="Methods invoked using `invokeWithTransaction` must return a boolean value.")>
 			</cfif>
 			<cfif loc.returnValue>
@@ -42,7 +43,7 @@
 		</cftransaction>
 		<cfset $closeTransaction()>
 	<cfelse>
-		<cfset loc.returnValue = $invoke(method=arguments.method, componentReference=this, argumentCollection=loc.methodArgs) />
+		<cfset loc.returnValue = $invoke(method=arguments.method, componentReference=this, invokeArgs=loc.methodArgs) />
 	</cfif>
 	<cfreturn loc.returnValue />
 </cffunction>

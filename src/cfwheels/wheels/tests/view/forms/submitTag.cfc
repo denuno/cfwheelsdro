@@ -1,13 +1,13 @@
 <cfcomponent extends="wheelsMapping.test">
 
 	<cffunction name="setup">
-		<cfset loc.controller = $controller(name="ControllerWithModel")>
+		<cfset loc.controller = controller(name="ControllerWithModel")>
 	</cffunction>
 
 	<cffunction name="test_defaults">
 		<cfset loc.e = loc.controller.submitTag()>
 		<cfset loc.r = '<input type="submit" value="Save changes" />'>
-		<cfset halt(false, 'loc.e')>
+		<cfset debug('loc.e', false)>
 		<cfset assert('loc.e eq loc.r')>
 	</cffunction>
 

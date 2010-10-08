@@ -1,10 +1,16 @@
 <!--- PUBLIC MODEL CLASS METHODS --->
 
-<cffunction name="average" returntype="any" access="public" output="false" hint="Calculates the average value for a given property. Uses the SQL function `AVG`. If no records can be found to perform the calculation on, a blank string is returned."
+<cffunction name="average" returntype="any" access="public" output="false" hint="Calculates the average value for a given property. Uses the SQL function `AVG`. If no records can be found to perform the calculation on you can use the `ifNull` argument to decide what should be returned."
 	examples=
 	'
 		<!--- Get the average salary for all employees --->
 		<cfset avgSalary = model("employee").average("salary")>
+		
+		<!--- Get the average salary for employees in a given department --->
+		<cfset avgSalary = model("employee").average(property="salary", where="departmentId=##params.key##")>
+		
+		<!--- Make sure a numeric value is always returned if no records are calculated --->
+		<cfset avgSalary = model("employee").average(property="salary", where="salary BETWEEN ##params.min## AND ##params.max##", ifNull=0>
 	'
 	categories="model-class,statistics" chapters="column-statistics" functions="count,maximum,minimum,sum">
 	<cfargument name="property" type="string" required="true" hint="Name of the property to calculate the average for.">
@@ -16,7 +22,7 @@
 	<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false" hint="See documentation for @findAll.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="average", input=arguments);
+		$args(name="average", args=arguments);
 		if (ListFindNoCase("cf_sql_integer,cf_sql_bigint,cf_sql_smallint,cf_sql_tinyint", variables.wheels.class.properties[arguments.property].type))
 		{
 			// this is an integer column so we get all the values from the database and do the calculation in ColdFusion since we can't run a query to get the average value without type casting it
@@ -54,12 +60,12 @@
 		<!--- Count how many authors there are in the table --->
 		<cfset authorCount = model("author").count()>
 
-		<!--- Count how many authors whose last name starts with "A" there are --->
+		<!--- Count how many authors that have a last name starting with an "A" --->
 		<cfset authorOnACount = model("author").count(where="lastName LIKE ''A%''")>
 
-		<!--- Count how many authors that have written books starting on "A" --->
-		<cfset authorWithBooksOnACount = model("author").count(include="books", where="title LIKE ''A%''")>
-
+		<!--- Count how many authors that have written books starting with an "A" --->
+		<cfset authorWithBooksOnACount = model("author").count(include="books", where="booktitle LIKE ''A%''")>
+		
 		<!--- Count the number of comments on a specific post (a `hasMany` association from `post` to `comment` is required) --->
 		<!--- The `commentCount` method will call `model("comment").count(where="postId=##post.id##")` internally --->
 		<cfset aPost = model("post").findByKey(params.postId)>
@@ -71,68 +77,88 @@
 	<cfargument name="parameterize" type="any" required="false" hint="See documentation for @findAll.">
 	<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false" hint="See documentation for @findAll.">
 	<cfscript>
-		$insertDefaults(name="count", input=arguments);
+		var returnValue = "";
+		$args(name="count", args=arguments);
 		arguments.type = "COUNT";
 		arguments.property = ListFirst(primaryKey());
 		if (Len(arguments.include))
 			arguments.distinct = true;
 		else
 			arguments.distinct = false;
+		returnValue = $calculate(argumentCollection=arguments);
+		if (IsNumeric(returnValue))
+			return returnValue;
+		else
+			return 0;
 	</cfscript>
-	<cfreturn $calculate(argumentCollection=arguments)>
 </cffunction>
 
-<cffunction name="maximum" returntype="any" access="public" output="false" hint="Calculates the maximum value for a given property. Uses the SQL function `MAX`. If no records can be found to perform the calculation on, a blank string is returned."
+<cffunction name="maximum" returntype="any" access="public" output="false" hint="Calculates the maximum value for a given property. Uses the SQL function `MAX`. If no records can be found to perform the calculation on you can use the `ifNull` argument to decide what should be returned."
 	examples=
 	'
 		<!--- Get the amount of the highest salary for all employees --->
 		<cfset highestSalary = model("employee").maximum("salary")>
+		
+		<!--- Get the amount of the highest salary for employees in a given department --->
+		<cfset highestSalary = model("employee").maximum(property="salary", where="departmentId=##params.key##")>
+		
+		<!--- Make sure a numeric value is always returned, even if no records are found to calculate the maximum for --->
+		<cfset highestSalary = model("employee").maximum(property="salary", where="salary > ##params.minSalary##", ifNull=0)>
 	'
 	categories="model-class,statistics" chapters="column-statistics" functions="average,count,minimum,sum">
-	<cfargument name="property" type="string" required="true" hint="Name of the property to get the highest value for (has to be a property of a numeric data type).">
+	<cfargument name="property" type="string" required="true" hint="Name of the property to get the highest value for (must be a property of a numeric data type).">
 	<cfargument name="where" type="string" required="false" default="" hint="See documentation for @findAll.">
 	<cfargument name="include" type="string" required="false" default="" hint="See documentation for @findAll.">
 	<cfargument name="parameterize" type="any" required="false" hint="See documentation for @findAll.">
 	<cfargument name="ifNull" type="any" required="false" hint="See documentation for @average.">
 	<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false" hint="See documentation for @findAll.">
 	<cfscript>
-		$insertDefaults(name="maximum", input=arguments);
+		$args(name="maximum", args=arguments);
 		arguments.type = "MAX";
 	</cfscript>
 	<cfreturn $calculate(argumentCollection=arguments)>
 </cffunction>
 
-<cffunction name="minimum" returntype="any" access="public" output="false" hint="Calculates the minimum value for a given property. Uses the SQL function `MIN`. If no records can be found to perform the calculation on, a blank string is returned."
+<cffunction name="minimum" returntype="any" access="public" output="false" hint="Calculates the minimum value for a given property. Uses the SQL function `MIN`. If no records can be found to perform the calculation on you can use the `ifNull` argument to decide what should be returned."
 	examples=
 	'
 		<!--- Get the amount of the lowest salary for all employees --->
 		<cfset lowestSalary = model("employee").minimum("salary")>
+		
+		<!--- Get the amount of the lowest salary for employees in a given department --->
+		<cfset lowestSalary = model("employee").minimum(property="salary", where="departmentId=##params.id##")>
+		
+		<!--- Make sure a numeric amount is always returned, even when there were no records analyzed by the query --->
+		<cfset lowestSalary = model("employee").minimum(property="salary", where="salary BETWEEN ##params.min## AND ##params.max##", ifNull=0)>
 	'
 	categories="model-class,statistics" chapters="column-statistics" functions="average,count,maximum,sum">
-	<cfargument name="property" type="string" required="true" hint="Name of the property to get the lowest value for (has to be a property of a numeric data type).">
+	<cfargument name="property" type="string" required="true" hint="Name of the property to get the lowest value for (must be a property of a numeric data type).">
 	<cfargument name="where" type="string" required="false" default="" hint="See documentation for @findAll.">
 	<cfargument name="include" type="string" required="false" default="" hint="See documentation for @findAll.">
 	<cfargument name="parameterize" type="any" required="false" hint="See documentation for @findAll.">
 	<cfargument name="ifNull" type="any" required="false" hint="See documentation for @average.">
 	<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false" hint="See documentation for @findAll.">
 	<cfscript>
-		$insertDefaults(name="minimum", input=arguments);
+		$args(name="minimum", args=arguments);
 		arguments.type = "MIN";
 	</cfscript>
 	<cfreturn $calculate(argumentCollection=arguments)>
 </cffunction>
 
-<cffunction name="sum" returntype="any" access="public" output="false" hint="Calculates the sum of values for a given property. Uses the SQL function `SUM`. If no records can be found to perform the calculation on, `0` is returned."
+<cffunction name="sum" returntype="any" access="public" output="false" hint="Calculates the sum of values for a given property. Uses the SQL function `SUM`. If no records can be found to perform the calculation on you can use the `ifNull` argument to decide what should be returned."
 	examples=
 	'
 		<!--- Get the sum of all salaries --->
-		<cfset allSalaries = model("employee").sum(property="salary")>
+		<cfset allSalaries = model("employee").sum("salary")>
 
-		<!--- Get the sum of all salaries for employees in Australia --->
-		<cfset allAustralianSalaries = model("employee").sum(property="salary", include="country", where="name=''Australia''")>
+		<!--- Get the sum of all salaries for employees in a given country --->
+		<cfset allAustralianSalaries = model("employee").sum(property="salary", include="country", where="countryname=''Australia''")>
+		
+		<!--- Make sure a numeric value is always returned, even if there are no records analyzed by the query --->
+		<cfset salarySum = model("employee").sum(property="salary", where="salary BETWEEN ##params.min## AND ##params.max##", ifNull=0)>
 	'
 	categories="model-class,statistics" chapters="column-statistics" functions="average,count,maximum,minimum">
-	<cfargument name="property" type="string" required="true" hint="Name of the property to get the sum for (has to be a property of a numeric data type).">
+	<cfargument name="property" type="string" required="true" hint="Name of the property to get the sum for (must be a property of a numeric data type).">
 	<cfargument name="where" type="string" required="false" default="" hint="See documentation for @findAll.">
 	<cfargument name="include" type="string" required="false" default="" hint="See documentation for @findAll.">
 	<cfargument name="distinct" type="boolean" required="false" hint="When `true`, `SUM` returns the sum of unique values only.">
@@ -140,7 +166,7 @@
 	<cfargument name="ifNull" type="any" required="false" hint="See documentation for @average.">
 	<cfargument name="includeSoftDeletes" type="boolean" required="false" default="false" hint="See documentation for @findAll.">
 	<cfscript>
-		$insertDefaults(name="sum", input=arguments);
+		$args(name="sum", args=arguments);
 		arguments.type = "SUM";
 	</cfscript>
 	<cfreturn $calculate(argumentCollection=arguments)>

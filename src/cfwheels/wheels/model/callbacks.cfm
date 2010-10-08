@@ -1,6 +1,6 @@
 <!--- PUBLIC MODEL INITIALIZATION METHODS --->
 
-<cffunction name="afterNew" returntype="void" access="public" output="false" hint="Registers method(s) that should be called after a new object has been initialized (usually done with the @new method)."
+<cffunction name="afterNew" returntype="void" access="public" output="false" hint="Registers method(s) that should be called after a new object has been initialized (which is usually done with the @new method)."
 	examples=
 	'
 		<!--- Instruct Wheels to call the `fixObj` method --->
@@ -11,7 +11,7 @@
 	<cfset $registerCallback(type="afterNew", argumentCollection=arguments)>
 </cffunction>
 
-<cffunction name="afterFind" returntype="void" access="public" output="false" hint="Registers method(s) that should be called after an existing object has been initialized (usually done with the @findByKey or @findOne method)."
+<cffunction name="afterFind" returntype="void" access="public" output="false" hint="Registers method(s) that should be called after an existing object has been initialized (which is usually done with the @findByKey or @findOne method)."
 	examples=
 	'
 		<!--- Instruct Wheels to call the `setTime` method after getting objects or records with one of the finder methods --->
@@ -20,12 +20,8 @@
 		</cffunction>
 
 		<cffunction name="setTime">
-			<cfif StructIsEmpty(arguments)>
-				<cfset this.fetchedAt = Now()>
-			<cfelse>
-				<cfset arguments.fetchedAt = Now()>
-				<cfreturn arguments>
-			</cfif>
+			<cfset arguments.fetchedAt = Now()>
+			<cfreturn arguments>
 		</cffunction>
 	'
 	categories="model-initialization,callbacks" chapters="object-callbacks" functions="afterCreate,afterDelete,afterInitialization,afterNew,afterSave,afterUpdate,afterValidation,afterValidationOnCreate,afterValidationOnUpdate,beforeCreate,beforeDelete,beforeSave,beforeUpdate,beforeValidation,beforeValidationOnCreate,beforeValidationOnUpdate">
@@ -271,10 +267,23 @@
 		for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 		{
 			loc.method = loc.callbacks[loc.i];
-			if (arguments.type == "afterFind" && IsQuery(arguments.collection))
+			if (arguments.type == "afterFind")
 			{
 				// since this is an afterFind callback we need to handle it differently
-				loc.returnValue = $queryCallback(method=loc.method, collection=arguments.collection);
+				if (IsQuery(arguments.collection))
+				{
+					loc.returnValue = $queryCallback(method=loc.method, collection=arguments.collection);
+				}
+				else
+				{
+					loc.invokeArgs = properties();
+					loc.returnValue = $invoke(method=loc.method, invokeArgs=loc.invokeArgs);
+					if (StructKeyExists(loc, "returnValue") && IsStruct(loc.returnValue))
+					{
+						setProperties(loc.returnValue);
+						StructDelete(loc, "returnValue");
+					}
+				}
 			}
 			else
 			{
@@ -309,23 +318,23 @@
 		for (loc.j=1; loc.j <= loc.jEnd; loc.j++)
 		{
 			// get the values in the current query row so that we can pass them in as arguments to the callback method
-			loc.args = {};
+			loc.invokeArgs = {};
 			loc.kEnd = ListLen(arguments.collection.columnList);
 			for (loc.k=1; loc.k <= loc.kEnd; loc.k++)
 			{
 				loc.kItem = ListGetAt(arguments.collection.columnList, loc.k);
 				try // coldfusion has a problem with empty strings in queries for bit types
 				{
-					loc.args[loc.kItem] = arguments.collection[loc.kItem][loc.j];
+					loc.invokeArgs[loc.kItem] = arguments.collection[loc.kItem][loc.j];
 				}
 				catch (Any e)
 				{
-					loc.args[loc.kItem] = "";
+					loc.invokeArgs[loc.kItem] = "";
 				}
 			}
 
 			// execute the callback method
-			loc.result = $invoke(method=arguments.method, argumentCollection=loc.args);
+			loc.result = $invoke(method=arguments.method, invokeArgs=loc.invokeArgs);
 
 			if (StructKeyExists(loc, "result"))
 			{
@@ -350,7 +359,7 @@
 		}
 
 		// update the request with a hash of the query if it changed so that we can find it with pagination
-		loc.querykey = Hash(SerializeJSON(arguments.collection));
+		loc.querykey = $hashedKey(arguments.collection);
 		if (!StructKeyExists(request.wheels, loc.querykey))
 			request.wheels[loc.querykey] = variables.wheels.class.modelName;
 	</cfscript>

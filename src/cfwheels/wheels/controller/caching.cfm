@@ -5,13 +5,14 @@
 	'
 		<cfset caches(actions="browseByUser,browseByTitle", time=30)>
 	'
-	categories="controller-initialization" chapters="caching" functions="">
+	categories="controller-initialization,caching" chapters="caching" functions="">
 	<cfargument name="action" type="string" required="false" default="" hint="Action(s) to cache. This argument is also aliased as `actions`.">
 	<cfargument name="time" type="numeric" required="false" hint="Minutes to cache the action(s) for.">
 	<cfargument name="static" type="boolean" required="false" hint="Set to `true` to tell Wheels that this is a static page and that it can skip running the controller filters (before and after filters set on actions) and application events (onSessionStart, onRequestStart etc).">
 	<cfscript>
 		var loc = {};
 		$args(args=arguments, name="caches", combine="action/actions");
+		arguments.action = $listClean(arguments.action);
 		if (!Len(arguments.action))
 		{
 			// since no actions were passed in we assume that all actions should be cachable and indicate this with a *
@@ -20,7 +21,7 @@
 		loc.iEnd = ListLen(arguments.action);
 		for (loc.i=1; loc.i <= loc.iEnd; loc.i++)
 		{
-			loc.item = Trim(ListGetAt(arguments.action, loc.i));
+			loc.item = ListGetAt(arguments.action, loc.i);
 			loc.action = {action=loc.item, time=arguments.time, static=arguments.static};
 			$addCachableAction(loc.action);
 		}
@@ -31,28 +32,24 @@
 
 <cffunction name="$addCachableAction" returntype="void" access="public" output="false">
 	<cfargument name="action" type="struct" required="true">
-	<cfset ArrayAppend(variables.wheels.cachableActions, arguments.action)>
+	<cfset ArrayAppend(variables.$class.cachableActions, arguments.action)>
 </cffunction>
 
 <cffunction name="$clearCachableActions" returntype="void" access="public" output="false">
-	<cfset ArrayClear(variables.wheels.cachableActions)>
+	<cfset ArrayClear(variables.$class.cachableActions)>
 </cffunction>
 
 <cffunction name="$setCachableActions" returntype="void" access="public" output="false">
 	<cfargument name="actions" type="array" required="true">
-	<cfset variables.wheels.cachableActions = arguments.actions>
+	<cfset variables.$class.cachableActions = arguments.actions>
 </cffunction>
 
 <cffunction name="$cachableActions" returntype="array" access="public" output="false">
-	<cfreturn variables.wheels.cachableActions>
+	<cfreturn variables.$class.cachableActions>
 </cffunction>
 
 <cffunction name="$hasCachableActions" returntype="boolean" access="public" output="false">
 	<cfreturn ArrayIsEmpty($cachableActions())>
-</cffunction>
-
-<cffunction name="$cacheKey" returntype="string" access="public" output="false">
-	<cfreturn hash("#request.cgi.http_host##controllerName()##SerializeJSON(params)#")>
 </cffunction>
 
 <cffunction name="$cacheSettingsForAction" returntype="any" access="public" output="false">

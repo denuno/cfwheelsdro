@@ -1,4 +1,4 @@
-<cffunction name="autoLink" returntype="string" access="public" output="false" hint="Turns all URLs and e-mail addresses into clickable links."
+<cffunction name="autoLink" returntype="string" access="public" output="false" hint="Turns all URLs and email addresses into hyperlinks."
 	examples=
 	'
 		##autoLink("Download Wheels from http://cfwheels.org/download")##
@@ -10,24 +10,55 @@
 	categories="view-helper,text" functions="excerpt,highlight,simpleFormat,titleize,truncate">
 	<cfargument name="text" type="string" required="true" hint="The text to create links in.">
 	<cfargument name="link" type="string" required="false" default="all" hint="Whether to link URLs, email addresses or both. Possible values are: `all` (default), `URLs` and `emailAddresses`.">
-	<cfargument name="domains" type="string" required="false" hint="The domains (.com, .co.uk etc) to auto link, not used with email addresses.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="autoLink", input=arguments);
-		loc.domains = Replace(ListChangeDelims(arguments.domains, "|"), ".", "\.", "all");
-		loc.urlRegex = "(?ix)([^(url=)|(href=)'""])(((https?)://([^:]+\:[^@]*@)?)([\d\w\-]+\.)?[\w\d\-\.]+\.(" & loc.domains & ")(( / [\w\d\.\-@%\\\/:]* )+)?(\?[\w\d\?%,\.\/\##!@:=\+~_\-&amp;]*(?<![\.]))?)";
-		loc.mailRegex = "(([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,}))";
-		loc.returnValue = " " & arguments.text & " "; // spaces added because the regex assumes links are in the middle of the text
 		if (arguments.link != "emailAddresses")
-			loc.returnValue = loc.returnValue.ReplaceAll(loc.urlRegex, "$1<a href=""$2"">$2</a>");
+		{
+			arguments.regex = "(?:(?:<a\s[^>]+)?(?:https?://|www\.)[^\s\b]+)";
+			arguments.text = $autoLinkLoop(argumentCollection=arguments);
+		}
 		if (arguments.link != "URLs")
-			loc.returnValue = REReplaceNoCase(loc.returnValue, loc.mailRegex, "<a href=""mailto:\1"">\1</a>", "all");
-		loc.returnValue = Mid(loc.returnValue, 2, Len(loc.returnValue)-2);
+		{
+			arguments.regex = "(?:(?:<a\s[^>]+)?(?:[^@\s]+)@(?:(?:[-a-z0-9]+\.)+[a-z]{2,}))";
+			arguments.protocol = "mailto:";
+			arguments.text = $autoLinkLoop(argumentCollection=arguments);
+		}
 	</cfscript>
-	<cfreturn loc.returnValue>
+	<cfreturn arguments.text>
 </cffunction>
 
-<cffunction name="excerpt" returntype="string" access="public" output="false" hint="Extracts an excerpt from text that matches the first instance of phrase."
+<cffunction name="$autoLinkLoop" access="public" returntype="string" output="false">
+	<cfargument name="text" type="string" required="true">
+	<cfargument name="regex" type="string" required="true">
+	<cfargument name="protocol" type="string" required="false" default="">
+	<cfscript>
+	var loc = {};
+	loc.PunctuationRegEx = "([^\w\/-]+)$";
+	loc.startPosition = 1;
+	loc.match = ReFindNoCase(arguments.regex, arguments.text, loc.startPosition, true);
+	while(loc.match.pos[1] gt 0)
+	{
+		loc.startPosition = loc.match.pos[1] + loc.match.len[1];
+		loc.str = Mid(arguments.text, loc.match.pos[1], loc.match.len[1]);
+		if (Left(loc.str, 2) neq "<a")
+		{
+			arguments.text = RemoveChars(arguments.text, loc.match.pos[1], loc.match.len[1]);
+			// remove any sort of trailing puncuation
+			loc.punctuation = ArrayToList(ReMatchNoCase(loc.PunctuationRegEx, loc.str));
+			loc.str = REReplaceNoCase(loc.str, loc.PunctuationRegEx, "", "all");
+			arguments.href = arguments.protocol & loc.str;
+			loc.element = $element("a", arguments, loc.str, "text,regex,link,domains,protocol") & loc.punctuation;
+			arguments.text = Insert(loc.element, arguments.text, loc.match.pos[1]-1);
+			loc.startPosition = loc.match.pos[1] + len(loc.element);
+		}
+		loc.startPosition++;
+		loc.match = ReFindNoCase(arguments.regex, arguments.text, loc.startPosition, true);
+	}
+	</cfscript>
+	<cfreturn arguments.text>
+</cffunction>
+
+<cffunction name="excerpt" returntype="string" access="public" output="false" hint="Extracts an excerpt from text that matches the first instance of a given phrase."
 	examples=
 	'
 		##excerpt(text="ColdFusion Wheels is a Rails-like MVC framework for Adobe ColdFusion and Railo", phrase="framework", radius=5)##
@@ -121,10 +152,10 @@
 <cffunction name="simpleFormat" returntype="string" access="public" output="false" hint="Replaces single newline characters with HTML break tags and double newline characters with HTML paragraph tags (properly closed to comply with XHTML standards)."
 	examples=
 	'
-		<!--- how most of your calls will look --->
+		<!--- How most of your calls will look --->
 		##simpleFormat(post.comments)##
 
-		<!--- demonstrates what output looks like with specific data --->
+		<!--- Demonstrates what output looks like with specific data --->
 		<cfsavecontent variable="comment">
 			I love this post!
 
@@ -148,14 +179,14 @@
 	<cfscript>
 		var loc = {};
 		loc.returnValue = Trim(arguments.text);
-		loc.returnValue = Replace(loc.returnValue, "#Chr(13)##Chr(10)#", Chr(10), "all");
+		loc.returnValue = Replace(loc.returnValue, "#Chr(13)#", "", "all");
 		loc.returnValue = Replace(loc.returnValue, "#Chr(10)##Chr(10)#", "</p><p>", "all");
 		loc.returnValue = Replace(loc.returnValue, "#Chr(10)#", "<br />", "all");
 		
 		// add back in our returns so we can strip the tags and re-apply them without issue
 		// this is good to be edited the textarea text in it's original format (line returns)
-		loc.returnValue = Replace(loc.returnValue, "</p><p>", "</p>#Chr(13)##Chr(10)##Chr(13)##Chr(10)#<p>", "all");
-		loc.returnValue = Replace(loc.returnValue, "<br />", "<br />#Chr(13)##Chr(10)#", "all");
+		loc.returnValue = Replace(loc.returnValue, "</p><p>", "</p>#Chr(10)##Chr(10)#<p>", "all");
+		loc.returnValue = Replace(loc.returnValue, "<br />", "<br />#Chr(10)#", "all");
 		
 		if (arguments.wrap)
 			loc.returnValue = "<p>" & loc.returnValue & "</p>";
@@ -183,7 +214,7 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="truncate" returntype="string" access="public" output="false" hint="Truncates text to the specified length and replaces the last characters with the specified truncate string. (Defaults to ""..."")."
+<cffunction name="truncate" returntype="string" access="public" output="false" hint="Truncates text to the specified length and replaces the last characters with the specified truncate string (which defaults to ""..."")."
 	examples=
 	'
 		##truncate(text="Wheels is a framework for ColdFusion", length=20)##
@@ -198,7 +229,7 @@
 	<cfargument name="truncateString" type="string" required="false" hint="String to replace the last characters with.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="truncate", input=arguments);
+		$args(name="truncate", args=arguments);
 		if (Len(arguments.text) gt arguments.length)
 			loc.returnValue = Left(arguments.text, arguments.length-Len(arguments.truncateString)) & arguments.truncateString;
 		else
@@ -207,18 +238,18 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="wordTruncate" returntype="string" access="public" output="false" hint="Truncates text to the specified length of words and replaces the remaining characters with the specified truncate string. (Defaults to ""..."")."
+<cffunction name="wordTruncate" returntype="string" access="public" output="false" hint="Truncates text to the specified length of words and replaces the remaining characters with the specified truncate string (which defaults to ""..."")."
 	examples=
 	'
 		##wordTruncate(text="Wheels is a framework for ColdFusion", length=4)##
-		-> Wheels is a frame...
+		-> Wheels is a framework...
 
 		##truncate(text="Wheels is a framework for ColdFusion", truncateString=" (more)")##
 		-> Wheels is a framework for (more)
 	'
 	categories="view-helper,text" functions="autoLink,excerpt,highlight,simpleFormat,titleize">
 	<cfargument name="text" type="string" required="true" hint="The text to truncate.">
-	<cfargument name="length" type="numeric" required="false" default="5" hint="Length to truncate the text to.">
+	<cfargument name="length" type="numeric" required="false" default="5" hint="Number of words to truncate the text to.">
 	<cfargument name="truncateString" type="string" required="false" default="..." hint="String to replace the last characters with.">
 	<cfscript>
 		var loc = {};

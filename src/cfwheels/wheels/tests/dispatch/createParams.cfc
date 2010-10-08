@@ -4,6 +4,7 @@
 		<cfset loc.dispatch = createobject("component", "wheelsMapping.dispatch")>
 		<cfset loc.args = {}>
 		<cfset loc.args.path = "home">
+		<cfset loc.args.format = "" />
 		<cfset loc.args.route = {pattern="", controller="wheels", action="wheels"}>
 		<cfset loc.args.formScope = {}>
 		<cfset loc.args.urlScope = {}>
@@ -107,11 +108,22 @@
 		<cfset loc.args.formScope["obj[published-day]"] = 30>
 		<cfset loc.args.formScope["obj[published-year]"] = 2000>
 		<cfset loc.params = loc.dispatch.$createParams(argumentCollection=loc.args)>
-		<cfset halt(false, 'loc.params')>
+		<cfset debug('loc.params', false)>
 		<cfset assert('structkeyexists(loc.params.obj, "published-day")')>
 		<cfset assert('structkeyexists(loc.params.obj, "published-year")')>
 		<cfset assert('loc.params.obj["published-day"] eq 30')>
 		<cfset assert('loc.params.obj["published-year"] eq 2000')>
+	</cffunction>
+	
+	<cffunction name="test_route_with_format">
+		<cfscript>
+			loc.args.path = "people/index";
+			loc.args.format = "pdf";
+			loc.args.route = {pattern="[controller]/[action].[format]", controller="wheels", action="wheels", formatVariable="format", format="[format]"};
+			loc.params = loc.dispatch.$createParams(argumentCollection=loc.args);
+			assert('StructKeyExists(loc.params, "format") eq true');
+			assert('loc.params.format eq "pdf"');
+		</cfscript>
 	</cffunction>
 
 </cfcomponent>

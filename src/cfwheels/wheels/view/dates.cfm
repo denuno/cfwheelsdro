@@ -10,16 +10,19 @@
 	<cfargument name="includeSeconds" type="boolean" required="false" hint="Whether or not to include the number of seconds in the returned string.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="distanceOfTimeInWords", input=arguments);
+		$args(name="distanceOfTimeInWords", args=arguments);
 		loc.minuteDiff = DateDiff("n", arguments.fromTime, arguments.toTime);
 		loc.secondDiff = DateDiff("s", arguments.fromTime, arguments.toTime);
 		loc.hours = 0;
 		loc.days = 0;
 		loc.returnValue = "";
-
 		if (loc.minuteDiff <= 1)
 		{
-			if (arguments.includeSeconds && loc.secondDiff < 60)
+			if (loc.secondDiff < 60)
+				loc.returnValue = "less than a minute";
+			else
+				loc.returnValue = "1 minute";
+			if (arguments.includeSeconds)
 			{
 				if (loc.secondDiff < 5)
 					loc.returnValue = "less than 5 seconds";
@@ -29,12 +32,6 @@
 					loc.returnValue = "less than 20 seconds";
 				else if (loc.secondDiff < 40)
 					loc.returnValue = "half a minute";
-				else
-					loc.returnValue = "less than a minute";
-			}
-			else
-			{
-				loc.returnValue = "1 minute";
 			}
 		}
 		else if (loc.minuteDiff < 45)
@@ -68,11 +65,19 @@
 			loc.months = Int(loc.minuteDiff/43200);
 			loc.returnValue = loc.months & " months";
 		}
-		else if (loc.minuteDiff < 1051200)
+		else if (loc.minuteDiff < 657000)
 		{
 			loc.returnValue = "about 1 year";
 		}
-		else if (loc.minuteDiff > 1051200)
+		else if (loc.minuteDiff < 919800)
+		{
+			loc.returnValue = "over 1 year";
+		}
+		else if (loc.minuteDiff < 1051200)
+		{
+			loc.returnValue = "almost 2 years";
+		}
+		else if (loc.minuteDiff >= 1051200)
 		{
 			loc.years = Int(loc.minuteDiff/525600);
 			loc.returnValue = "over " & loc.years & " years";
@@ -90,7 +95,7 @@
 	<cfargument name="fromTime" type="date" required="true" hint="See documentation for @distanceOfTimeInWords.">
 	<cfargument name="includeSeconds" type="boolean" required="false" hint="See documentation for @distanceOfTimeInWords.">
 	<cfargument name="toTime" type="date" required="false" default="#now()#" hint="See documentation for @distanceOfTimeInWords.">
-	<cfset $insertDefaults(name="timeAgoInWords", input=arguments)>
+	<cfset $args(name="timeAgoInWords", args=arguments)>
 	<cfreturn distanceOfTimeInWords(argumentCollection=arguments)>
 </cffunction>
 
@@ -99,10 +104,10 @@
 		<cfset aLittleAhead = Now() + 30>
 		<cfoutput>##timeUntilInWords(aLittleAhead)##</cfoutput>
 	'
-	categories="view-helper,dates" chapters="miscellaneous-helpers" functions="timeAgoInWords,distanceOfTimeInWords.">
+	categories="view-helper,dates" chapters="miscellaneous-helpers" functions="timeAgoInWords,distanceOfTimeInWords">
 	<cfargument name="toTime" type="date" required="true" hint="See documentation for @distanceOfTimeInWords.">
 	<cfargument name="includeSeconds" type="boolean" required="false" hint="See documentation for @distanceOfTimeInWords.">
 	<cfargument name="fromTime" type="date" required="false" default="#now()#" hint="See documentation for @distanceOfTimeInWords.">
-	<cfset $insertDefaults(name="timeUntilInWords", input=arguments)>
+	<cfset $args(name="timeUntilInWords", args=arguments)>
 	<cfreturn distanceOfTimeInWords(argumentCollection=arguments)>
 </cffunction>

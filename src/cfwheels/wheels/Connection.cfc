@@ -31,7 +31,7 @@
 				loc.info = $dbinfo(argumentCollection=loc.args);
 			}
 
-			if (loc.info.driver_name Contains "SQLServer" || loc.info.driver_name Contains "Microsoft SQL Server")
+			if (loc.info.driver_name Contains "SQLServer" || loc.info.driver_name Contains "Microsoft SQL Server" || loc.info.driver_name Contains "MS SQL Server")
 				loc.adapterName = "MicrosoftSQLServer";
 			else if (loc.info.driver_name Contains "MySQL")
 				loc.adapterName = "MySQL";
@@ -41,6 +41,8 @@
 				loc.adapterName = "PostgreSQL";
 			else if (loc.info.driver_name Contains "SQLite")
 				loc.adapterName = "SQLite";
+			else if (loc.info.driver_name Contains "H2")
+				loc.adapterName = "H2";
 			else
 				$throw(type="Wheels.DatabaseNotSupported", message="#loc.info.database_productname# is not supported by Wheels.", extendedInfo="Use Microsoft SQL Server, MySQL, Oracle or PostgreSQL.");
 			loc.returnValue = CreateObject("component", "model.adapters.#loc.adapterName#").init(argumentCollection=variables.instance.connection);

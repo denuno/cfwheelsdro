@@ -122,4 +122,103 @@
 		</cfswitch>
 	</cffunction>
 
+	<cffunction name="$cleanInStatmentValue" returntype="string" access="public" output="false">
+		<cfargument name="statement" type="string" required="true">
+		<cfscript>
+		var loc = {};
+		loc.delim = ",";
+		if (Find("'", arguments.statement))
+		{
+			loc.delim = "','";
+			arguments.statement = RemoveChars(arguments.statement, 1, 1);
+			arguments.statement = reverse(RemoveChars(reverse(arguments.statement), 1, 1));
+			arguments.statement = Replace(arguments.statement, "''", "'", "all");
+		}
+		arguments.statement = ReplaceNoCase(arguments.statement, loc.delim, chr(7), "all");
+		</cfscript>
+		<cfreturn arguments.statement>
+	</cffunction>
+
+	<cffunction name="$CFQueryParameters" returntype="struct" access="public" output="false">
+		<cfargument name="settings" type="struct" required="true">
+		<cfscript>
+		var loc = {};
+		loc.params = {};
+		loc.params.cfsqltype = arguments.settings.type;
+		loc.params.value = arguments.settings.value;
+		if (StructKeyExists(arguments.settings, "null"))
+		{
+			loc.params.null = arguments.settings.null;
+		}
+		if (StructKeyExists(arguments.settings, "scale") AND arguments.settings.scale GT 0)
+		{
+			loc.params.scale = arguments.settings.scale;
+		}
+		if (StructKeyExists(arguments.settings, "list") AND arguments.settings.list)
+		{
+			loc.params.list = arguments.settings.list;
+			loc.params.separator = chr(7);
+			loc.params.value = $cleanInStatmentValue(loc.params.value);
+		}
+		if (!IsBinary(loc.params.value) && loc.params.value eq "null")
+		{
+			loc.params.useNull = true;
+		}
+		</cfscript>
+		<cfreturn loc.params>
+	</cffunction>
+
+	<cffunction name="$performQuery" returntype="struct" access="public" output="false">
+		<cfargument name="sql" type="array" required="true">
+		<cfargument name="parameterize" type="boolean" required="true">
+		<cfargument name="limit" type="numeric" required="false" default="0">
+		<cfargument name="offset" type="numeric" required="false" default="0">
+		<cfargument name="$primaryKey" type="string" required="false" default="">
+		<cfscript>
+		var loc = {};
+		var query = {};
+
+		loc.returnValue = {};
+		loc.args = {};
+
+		loc.args.result = "loc.result";
+		loc.args.name = "query.name";
+		loc.args.datasource = variables.instance.connection.datasource;
+		if (Len(variables.instance.connection.username))
+			loc.args.username = variables.instance.connection.username;
+		if (Len(variables.instance.connection.password))
+			loc.args.password = variables.instance.connection.password;
+		// set queries in Railo to not preserve single quotes on the entire
+		// cfquery block (we'll handle this individually in the SQL statement instead)
+		if (application.wheels.serverName == "Railo")
+			loc.args.psq = false;
+
+		// overloaded arguments are settings for the query
+		loc.orgArgs = duplicate(arguments);
+		StructDelete(loc.orgArgs, "sql", false);
+		StructDelete(loc.orgArgs, "parameterize", false);
+		StructDelete(loc.orgArgs, "limit", false);
+		StructDelete(loc.orgArgs, "offset", false);
+		StructDelete(loc.orgArgs, "$primaryKey", false);
+		StructAppend(loc.args, loc.orgArgs, true);
+		</cfscript>
+
+		<cfquery attributeCollection="#loc.args#"><cfloop array="#arguments.sql#" index="loc.i"><cfif IsStruct(loc.i)><cfif arguments.parameterize><cfset loc.queryParamAttributes = $CFQueryParameters(loc.i)><cfif StructKeyExists(loc.queryParamAttributes, "useNull")>NULL<cfelseif StructKeyExists(loc.queryParamAttributes, "list")>(<cfqueryparam attributeCollection="#loc.queryParamAttributes#">)<cfelse><cfqueryparam attributeCollection="#loc.queryParamAttributes#"></cfif><cfelse>'#loc.i.value#'</cfif><cfelse>#Replace(PreserveSingleQuotes(loc.i), "[[comma]]", ",", "all")#</cfif>#chr(13)##chr(10)#</cfloop><cfif arguments.limit>LIMIT #arguments.limit#<cfif arguments.offset>#chr(13)##chr(10)#OFFSET #arguments.offset#</cfif></cfif></cfquery>
+
+		<cfscript>
+		if (StructKeyExists(query, "name"))
+			loc.returnValue.query = query.name;
+
+		// get/set the primary key value if necessary
+		// will be done on insert statement involving auto-incremented primary keys when Railo/ACF cannot retrieve it for us
+		// this happens on non-supported databases (example: H2, SQLite) and drivers (example: jTDS)
+		loc.$id = $identitySelect(queryAttributes=loc.args, result=loc.result, primaryKey=arguments.$primaryKey);
+		if (StructKeyExists(loc, "$id"))
+			StructAppend(loc.result, loc.$id);
+
+		loc.returnValue.result = loc.result;
+		</cfscript>
+		<cfreturn loc.returnValue>
+	</cffunction>
+
 </cfcomponent>

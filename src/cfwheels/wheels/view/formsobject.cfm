@@ -1,24 +1,35 @@
-<cffunction name="textField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text field form control based on the supplied `objectName` and `property`."
+<cffunction name="textField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text field form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Provide a `label` and the required `objectName` and `property` --->
 		<cfoutput>
-		    <p>##textField(label="First Name", objectName="user", property="firstName")##</p>
+		    ##textField(label="First Name", objectName="user", property="firstName")##
 		</cfoutput>
+		
+		<!--- Display fields for phone numbers provided by the `phoneNumbers` association and nested properties --->
+		<fieldset>
+			<legend>Phone Numbers</legend>
+			<cfloop from="1" to="##ArrayLen(contact.phoneNumbers)##" index="i">
+				##textField(label="Phone ####i##", objectName="contact", association="phoneNumbers", position=i, property="phoneNumber")##
+			</cfloop>
+		</fieldset>
 	'
-	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,submitTag,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="The variable name of the object to build the form control for.">
 	<cfargument name="property" type="string" required="true" hint="The name of the property to use in the form control.">
+	<cfargument name="association" type="string" required="false" hint="The name of the association that the property is located on. Used for building nested forms that work with nested properties. If you are building a form with deep nesting, simply pass in a list to the nested object, and Wheels will figure it out.">
+	<cfargument name="position" type="string" required="false" hint="The position used when referencing a `hasMany` relationship in the `association` argument. Used for building nested forms that work with nested properties. If you are building a form with deep nestings, simply pass in a list of positions, and Wheels will figure it out.">
 	<cfargument name="label" type="string" required="false" hint="The label text to use in the form control.">
-	<cfargument name="labelPlacement" type="string" required="false" hint="Whether to place the label before, after, or wrapped around the form control.">
-	<cfargument name="prepend" type="string" required="false" hint="String to prepend to the form control. Useful to wrap the form control around HTML tags.">
-	<cfargument name="append" type="string" required="false" hint="String to append to the form control. Useful to wrap the form control around HTML tags.">
-	<cfargument name="prependToLabel" type="string" required="false" hint="String to prepend to the form control's label. Useful to wrap the form control around HTML tags.">
-	<cfargument name="appendToLabel" type="string" required="false" hint="String to append to the form control's label. Useful to wrap the form control around HTML tags.">
+	<cfargument name="labelPlacement" type="string" required="false" hint="Whether to place the label `before`, `after`, or wrapped `around` the form control.">
+	<cfargument name="prepend" type="string" required="false" hint="String to prepend to the form control. Useful to wrap the form control with HTML tags.">
+	<cfargument name="append" type="string" required="false" hint="String to append to the form control. Useful to wrap the form control with HTML tags.">
+	<cfargument name="prependToLabel" type="string" required="false" hint="String to prepend to the form control's `label`. Useful to wrap the form control with HTML tags.">
+	<cfargument name="appendToLabel" type="string" required="false" hint="String to append to the form control's `label`. Useful to wrap the form control with HTML tags.">
 	<cfargument name="errorElement" type="string" required="false" hint="HTML tag to wrap the form control with when the object contains errors.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="textField", reserved="type,name,value", input=arguments);
+		$args(name="textField", reserved="type,name,value", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		if (!StructKeyExists(arguments, "id"))
 			arguments.id = $tagId(arguments.objectName, arguments.property);
 		loc.before = $formBeforeElement(argumentCollection=arguments);
@@ -29,22 +40,32 @@
 		if (StructKeyExists(loc, "maxlength"))
 			arguments.maxlength = loc.maxlength;
 		arguments.value = $formValue(argumentCollection=arguments);
-		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", attributes=arguments) & loc.after;
+		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", attributes=arguments) & loc.after;
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="passwordField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a password field form control based on the supplied `objectName` and `property`."
+<cffunction name="passwordField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a password field form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Provide a `label` and the required `objectName` and `property` --->
 		<cfoutput>
-		    <p>##passwordField(objectName="user", property="pass")##</p>
+		    ##passwordField(label="Password", objectName="user", property="password")##
 		</cfoutput>
+		
+		<!--- Display fields for passwords provided by the `passwords` association and nested properties --->
+		<fieldset>
+			<legend>Passwords</legend>
+			<cfloop from="1" to="##ArrayLen(user.passwords)##" index="i">
+				##passwordField(label="Password ####i##", objectName="user", association="passwords", position=i, property="password")##
+			</cfloop>
+		</fieldset>
 	'
-	categories="view-helper,forms-object" chapter="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapter="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
 	<cfargument name="label" type="string" required="false" hint="See documentation for @textField">
 	<cfargument name="labelPlacement" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="prepend" type="string" required="false" hint="See documentation for @textField.">
@@ -54,7 +75,8 @@
 	<cfargument name="errorElement" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="passwordField", reserved="type,name,value", input=arguments);
+		$args(name="passwordField", reserved="type,name,value", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		if (!StructKeyExists(arguments, "id"))
 			arguments.id = $tagId(arguments.objectName, arguments.property);
 		loc.before = $formBeforeElement(argumentCollection=arguments);
@@ -65,25 +87,28 @@
 		if (StructKeyExists(loc, "maxlength"))
 			arguments.maxlength = loc.maxlength;
 		arguments.value = $formValue(argumentCollection=arguments);
-		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", attributes=arguments) & loc.after;
+		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", attributes=arguments) & loc.after;
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="hiddenField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a hidden field form control based on the supplied `objectName` and `property`."
+<cffunction name="hiddenField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a hidden field form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Provide an `objectName` and `property` --->
 		<cfoutput>
-		    <p>##hiddenField(objectName="user", property="id")##</p>
+		    ##hiddenField(objectName="user", property="id")##
 		</cfoutput>
 	'
-	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="hiddenField", reserved="type,name,value", input=arguments);
+		$args(name="hiddenField", reserved="type,name,value", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		arguments.type = "hidden";
 		arguments.name = $tagName(arguments.objectName, arguments.property);
 		if (!StructKeyExists(arguments, "id"))
@@ -91,22 +116,33 @@
 		arguments.value = $formValue(argumentCollection=arguments);
 		if (application.wheels.obfuscateUrls && StructKeyExists(request.wheels, "currentFormMethod") && request.wheels.currentFormMethod == "get")
 			arguments.value = obfuscateParam(arguments.value);
-		loc.returnValue = $tag(name="input", close=true, skip="objectName,property", attributes=arguments);
+		loc.returnValue = $tag(name="input", close=true, skip="objectName,property,association,position", attributes=arguments);
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="fileField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a file field form control based on the supplied `objectName` and `property`."
+<cffunction name="fileField" returntype="string" access="public" output="false" hint="Builds and returns a string containing a file field form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Provide a `label` and the required `objectName` and `property` --->
 		<cfoutput>
-		    <p>##fileField(objectName="photo", property="imageFile")##</p>
+		    ##fileField(label="Photo", objectName="photo", property="imageFile")##
 		</cfoutput>
+		
+		<!--- Display fields for photos provided by the `screenshots` association and nested properties --->
+		<fieldset>
+			<legend>Screenshots</legend>
+			<cfloop from="1" to="##ArrayLen(site.screenshots)##" index="i">
+				##fileField(label="File ####i##", objectName="site", association="screenshots", position=i, property="file")##
+				##textField(label="Caption ####i##", objectName="site", association="screenshots", position=i, property="caption")##
+			</cfloop>
+		</fieldset>
 	'
-	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,select,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
 	<cfargument name="label" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="labelPlacement" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="prepend" type="string" required="false" hint="See documentation for @textField.">
@@ -116,29 +152,41 @@
 	<cfargument name="errorElement" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="fileField", reserved="type,name", input=arguments);
+		$args(name="fileField", reserved="type,name", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		if (!StructKeyExists(arguments, "id"))
 			arguments.id = $tagId(arguments.objectName, arguments.property);
 		loc.before = $formBeforeElement(argumentCollection=arguments);
 		loc.after = $formAfterElement(argumentCollection=arguments);
 		arguments.type = "file";
 		arguments.name = $tagName(arguments.objectName, arguments.property);
-		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", attributes=arguments) & loc.after;
+		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", attributes=arguments) & loc.after;
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="textArea" returntype="string" access="public" output="false" hint="Builds and returns a string containing a password field form control based on the supplied `objectName` and `property`."
+<cffunction name="textArea" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text area field form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Provide `label` and required `objectName` and `property` --->
 		<cfoutput>
-		  <p>##textArea(objectName="article", property="overview")##</p>
+		    ##textArea(label="Overview", objectName="article", property="overview")##
 		</cfoutput>
+		
+		<!--- Display fields for photos provided by the `screenshots` association and nested properties --->
+		<fieldset>
+			<legend>Screenshots</legend>
+			<cfloop from="1" to="##ArrayLen(site.screenshots)##" index="i">
+				##fileField(label="File ####i##", objectName="site", association="screenshots", position=i, property="file")##
+				##textArea(label="Caption ####i##", objectName="site", association="screenshots", position=i, property="caption")##
+			</cfloop>
+		</fieldset>
 	'
 	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,hiddenField,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
 	<cfargument name="label" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="labelPlacement" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="prepend" type="string" required="false" hint="See documentation for @textField.">
@@ -148,32 +196,49 @@
 	<cfargument name="errorElement" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="textArea", reserved="name", input=arguments);
+		$args(name="textArea", reserved="name", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		if (!StructKeyExists(arguments, "id"))
 			arguments.id = $tagId(arguments.objectName, arguments.property);
 		loc.before = $formBeforeElement(argumentCollection=arguments);
 		loc.after = $formAfterElement(argumentCollection=arguments);
 		arguments.name = $tagName(arguments.objectName, arguments.property);
 		loc.content = $formValue(argumentCollection=arguments);
-		loc.returnValue = loc.before & $element(name="textarea", skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", content=loc.content, attributes=arguments) & loc.after;
+		loc.returnValue = loc.before & $element(name="textarea", skip="objectName,property,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", content=loc.content, attributes=arguments) & loc.after;
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="radioButton" returntype="string" access="public" output="false" hint="Builds and returns a string containing a radio button form control based on the supplied `objectName` and `property`."
+<cffunction name="radioButton" returntype="string" access="public" output="false" hint="Builds and returns a string containing a radio button form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic example view code --->
 		<cfoutput>
-		    <p>
+			<fieldset>
+				<legend>Gender</legend>
 			    ##radioButton(objectName="user", property="gender", tagValue="m", label="Male")##<br />
 		        ##radioButton(objectName="user", property="gender", tagValue="f", label="Female")##
-			</p>
+			</fieldset>
+		</cfoutput>
+		
+		<!--- Shows radio buttons for selecting the genders for all committee members provided by the `members` association and nested properties --->
+		<cfoutput>
+			<cfloop from="1" to="##ArrayLen(committee.members)##" index="i">
+				<div>
+					<h3>##committee.members[i].fullName##:</h3>
+					<div>
+						##radioButton(objectName="committee", association="members", position=i, property="gender", tagValue="m", label="Male")##<br />
+						##radioButton(objectName="committee", association="members", position=i, property="gender", tagValue="f", label="Female")##
+					</div>
+				</div>
+			</cfloop>
 		</cfoutput>
 	'
-	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,textField,submitTag,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,textField,submitTag,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
 	<cfargument name="tagValue" type="string" required="true" hint="The value of the radio button when `selected`.">
 	<cfargument name="label" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="labelPlacement" type="string" required="false" hint="See documentation for @textField.">
@@ -184,7 +249,8 @@
 	<cfargument name="errorElement" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="radioButton", reserved="type,name,value,checked", input=arguments);
+		$args(name="radioButton", reserved="type,name,value,checked", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		loc.valueToAppend = LCase(Replace(ReReplaceNoCase(arguments.tagValue, "[^a-z0-9- ]", "", "all"), " ", "-", "all"));
 		if (!StructKeyExists(arguments, "id"))
 		{
@@ -199,24 +265,38 @@
 		arguments.value = arguments.tagValue;
 		if (arguments.tagValue == $formValue(argumentCollection=arguments))
 			arguments.checked = "checked";
-		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,tagValue,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", attributes=arguments) & loc.after;
+		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,tagValue,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", attributes=arguments) & loc.after;
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="checkBox" returntype="string" access="public" output="false" hint="Builds and returns a string containing a check box form control based on the supplied `objectName` and `property`."
+<cffunction name="checkBox" returntype="string" access="public" output="false" hint="Builds and returns a string containing a check box form control based on the supplied `objectName` and `property`. In most cases, this function generates a form field that should represent a `boolean` style field in your data. Use @checkBoxTag or @hasManyCheckBox to generate check boxes for selecting multiple values. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic example of a check box for a boolean field --->
 		<cfoutput>
-		    <p>##checkBox(objectName="photo", property="isPublic", label="Display this photo publicly.")##</p>
+		    ##checkBox(objectName="photo", property="isPublic", label="Display this photo publicly.")##
+		</cfoutput>
+		
+		<!--- Shows check boxes for selecting public access for all photos provided by the `photos` association and nested properties --->
+		<cfoutput>
+			<cfloop from="1" to="##ArrayLen(user.photos)##" index="i">
+				<div>
+					<h3>##user.photos[i].title##:</h3>
+					<div>
+						##checkBox(objectName="user", association="photos", position=i, property="isPublic", label="Display this photo publicly.")##
+					</div>
+				</div>
+			</cfloop>
 		</cfoutput>
 	'
-	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
-	<cfargument name="checkedValue" type="string" required="false" hint="The value of the check box when it's on the `checked` state.">
-	<cfargument name="uncheckedValue" type="string" required="false" hint="The value of the check box when it's on the `unchecked` state.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="checkedValue" type="string" required="false" hint="The value of the check box when it's in the `checked` state.">
+	<cfargument name="uncheckedValue" type="string" required="false" hint="The value of the check box when it's in the `unchecked` state.">
 	<cfargument name="label" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="labelPlacement" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="prepend" type="string" required="false" hint="See documentation for @textField.">
@@ -226,7 +306,8 @@
 	<cfargument name="errorElement" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="checkBox", reserved="type,name,value,checked", input=arguments);
+		$args(name="checkBox", reserved="type,name,value,checked", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		if (!StructKeyExists(arguments, "id"))
 			arguments.id = $tagId(arguments.objectName, arguments.property);
 		loc.before = $formBeforeElement(argumentCollection=arguments);
@@ -237,7 +318,7 @@
 		loc.value = $formValue(argumentCollection=arguments);
 		if (loc.value == arguments.value || IsNumeric(loc.value) && loc.value == 1 || !IsNumeric(loc.value) && IsBoolean(loc.value) && loc.value)
 			arguments.checked = "checked";
-		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,checkedValue,uncheckedValue,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", attributes=arguments);
+		loc.returnValue = loc.before & $tag(name="input", close=true, skip="objectName,property,checkedValue,uncheckedValue,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", attributes=arguments);
 		if (Len(arguments.uncheckedValue))
 		{
 			loc.hiddenAttributes = {};
@@ -252,20 +333,35 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="select" returntype="string" access="public" output="false" hint="Builds and returns a string containing a select form control based on the supplied `objectName` and `property`."
+<cffunction name="select" returntype="string" access="public" output="false" hint="Builds and returns a string containing a `select` form control based on the supplied `objectName` and `property`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- controller code --->
+		<!--- Example 1: Basic `select` field with `label` and required `objectName` and `property` arguments --->
+		<!--- - Controller code --->
 		<cfset authors = model("author").findAll()>
 
-		<!--- view code --->
+		<!--- - View code --->
 		<cfoutput>
 		    <p>##select(objectName="book", property="authorId", options=authors)##</p>
 		</cfoutput>
+		
+		<!--- Example 2: Shows `select` fields for selecting order statuses for all shipments provided by the `orders` association and nested properties --->
+		<!--- - Controller code --->
+		<cfset shipment = model("shipment").findByKey(key=params.key, where="shipments.statusId=##application.NEW_STATUS_ID##", include="order")>
+		<cfset statuses = model("status").findAll(order="name")>
+		
+		<!--- - View code --->
+		<cfoutput>
+			<cfloop from="1" to="##ArrayLen(shipments.orders)##" index="i">
+				##select(label="Order ####shipments.orders[i].orderNum##", objectName="shipment", association="orders", position=i, property="statusId", options=statuses)##
+			</cfloop>
+		</cfoutput>
 	'
-	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,dateTimeSelect,dateSelect,timeSelect">
+	categories="view-helper,forms-object" chapters="form-helpers-and-showing-errors,nested-properties" functions="URLFor,startFormTag,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="objectName" type="any" required="true" hint="See documentation for @textField.">
 	<cfargument name="property" type="string" required="true" hint="See documentation for @textField.">
+	<cfargument name="association" type="string" required="false" hint="See documentation for @textfield.">
+	<cfargument name="position" type="string" required="false" hint="See documentation for @textfield.">
 	<cfargument name="options" type="any" required="true" hint="A collection to populate the select form control with. Can be a query recordset or an array of objects.">
 	<cfargument name="includeBlank" type="any" required="false" hint="Whether to include a blank option in the select form control. Pass `true` to include a blank line or a string that should represent what display text should appear for the empty value (for example, ""- Select One -"").">
 	<cfargument name="valueField" type="string" required="false" hint="The column or property to use for the value of each list element. Used only when a query or array of objects has been supplied in the `options` argument.">
@@ -279,13 +375,14 @@
 	<cfargument name="errorElement" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="select", reserved="name", input=arguments);
+		$args(name="select", reserved="name", args=arguments);
+		arguments.objectName = $objectName(argumentCollection=arguments);
 		if (!StructKeyExists(arguments, "id"))
 			arguments.id = $tagId(arguments.objectName, arguments.property);
 		loc.before = $formBeforeElement(argumentCollection=arguments);
 		loc.after = $formAfterElement(argumentCollection=arguments);
 		arguments.name = $tagName(arguments.objectName, arguments.property);
-		if (StructKeyExists(arguments, "multiple"))
+		if (StructKeyExists(arguments, "multiple") and IsBoolean(arguments.multiple))
 		{
 			if (arguments.multiple)
 				arguments.multiple = "multiple";
@@ -302,7 +399,7 @@
 			loc.blankOptionAttributes = {value=""};
 			loc.content = $element(name="option", content=loc.blankOptionText, attributes=loc.blankOptionAttributes) & loc.content;
 		}
-		loc.returnValue = loc.before & $element(name="select", skip="objectName,property,options,includeBlank,valueField,textField,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement", skipStartingWith="label", content=loc.content, attributes=arguments) & loc.after;
+		loc.returnValue = loc.before & $element(name="select", skip="objectName,property,options,includeBlank,valueField,textField,label,labelPlacement,prepend,append,prependToLabel,appendToLabel,errorElement,association,position", skipStartingWith="label", content=loc.content, attributes=arguments) & loc.after;
 	</cfscript>
 	<cfreturn loc.returnValue>
 </cffunction>
@@ -399,10 +496,29 @@
 				}
 				else if (IsObject(arguments.options[loc.i]))
 				{
-					if (StructKeyExists(arguments.options[loc.i], arguments.valueField))
-						loc.optionValue = arguments.options[loc.i][arguments.valueField];
-					if (StructKeyExists(arguments.options[loc.i], arguments.textField))
-						loc.optionText = arguments.options[loc.i][arguments.textField];
+					loc.object = arguments.options[loc.i];
+					if (!Len(arguments.valueField) || !Len(arguments.textField))
+					{
+						loc.propertyNames = loc.object.propertyNames();
+						loc.jEnd = ListLen(loc.propertyNames);
+						for (loc.j=1; loc.j <= loc.jEnd; loc.j++)
+						{
+							loc.propertyName = ListGetAt(loc.propertyNames, loc.j);
+							if (StructKeyExists(loc.object, loc.propertyName))
+							{
+								loc.propertyValue = loc.object[loc.propertyName];
+								if (!Len(arguments.valueField) && IsNumeric(loc.propertyValue))
+									arguments.valueField = loc.propertyName;
+								if (!Len(arguments.textField) && !IsNumeric(loc.propertyValue))
+									arguments.textField = loc.propertyName;
+							}
+						}
+					
+					}
+					if (StructKeyExists(loc.object, arguments.valueField))
+						loc.optionValue = loc.object[arguments.valueField];
+					if (StructKeyExists(loc.object, arguments.textField))
+						loc.optionText = loc.object[arguments.textField];
 				}
 				loc.returnValue = loc.returnValue & $option(objectValue=loc.value, optionValue=loc.optionValue, optionText=loc.optionText);
 			}

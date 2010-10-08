@@ -1,9 +1,9 @@
-<cffunction name="textFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text field form control based on the supplied `name`."
+<cffunction name="textFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text field form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic usage usually involves a `label`, `name`, and `value` --->
 		<cfoutput>
-		    <p>##textFieldTag(name="someName")##</p>
+		    ##textFieldTag(label="Search", name="q", value=params.q)##
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,radioButtonTag,checkBoxTag,passwordFieldTag,hiddenFieldTag,textAreaTag,fileFieldTag,selectTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
@@ -17,7 +17,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="textFieldTag", input=arguments);
+		$args(name="textFieldTag", args=arguments);
 		arguments.property = arguments.name;
 		arguments.objectName = {};
 		arguments.objectName[arguments.name] = arguments.value;
@@ -28,12 +28,12 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="passwordFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a password field form control based on the supplied `name`."
+<cffunction name="passwordFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a password field form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic usage usually involves a `label`, `name`, and `value` --->
 		<cfoutput>
-		    <p>##passwordFieldTag(name="password")##</p>
+		    ##passwordFieldTag(label="Password", name="password", value=params.password)##
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,radioButtonTag,checkBoxTag,hiddenFieldTag,textAreaTag,fileFieldTag,selectTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
@@ -47,7 +47,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="passwordFieldTag", input=arguments);
+		$args(name="passwordFieldTag", args=arguments);
 		arguments.property = arguments.name;
 		arguments.objectName = {};
 		arguments.objectName[arguments.name] = arguments.value;
@@ -58,12 +58,12 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="hiddenFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a hidden field form control based on the supplied `name`."
+<cffunction name="hiddenFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a hidden field form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic usage usually involves a `name` and `value` --->
 		<cfoutput>
-		    <p>##hiddenFieldTag(name="userId", value=user.id)##</p>
+		    ##hiddenFieldTag(name="userId", value=user.id)##
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,radioButtonTag,checkBoxTag,passwordFieldTag,textAreaTag,fileFieldTag,selectTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
@@ -81,12 +81,12 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="fileFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a file form control based on the supplied `name`."
+<cffunction name="fileFieldTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a file form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic usage usually involves a `label`, `name`, and `value` --->
 		<cfoutput>
-		    <p>##fileFieldTag(name="photo")##</p>
+		    ##fileFieldTag(label="Photo", name="photo", value=params.photo)##
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,radioButtonTag,checkBoxTag,passwordFieldTag,hiddenFieldTag,textAreaTag,selectTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
@@ -99,7 +99,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="fileFieldTag", input=arguments);
+		$args(name="fileFieldTag", args=arguments);
 		arguments.property = arguments.name;
 		arguments.objectName = {};
 		arguments.objectName[arguments.name] = "";
@@ -109,17 +109,17 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="textAreaTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text area form control based on the supplied `name`."
+<cffunction name="textAreaTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a text area form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic usage usually involves a `label`, `name`, and `password` --->
 		<cfoutput>
-		  <p>##textAreaTag(name="description")##</p>
+		    ##textAreaTag(label="Description", name="description", value=params.description)##
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,radioButtonTag,checkBoxTag,passwordFieldTag,hiddenFieldTag,fileFieldTag,selectTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
 	<cfargument name="name" type="string" required="true" hint="See documentation for @textFieldTag.">
-	<cfargument name="content" type="string" required="false" default="" hint="Content to display in `textarea` by default.">
+	<cfargument name="content" type="string" required="false" default="" hint="Content to display in `textarea` on page load.">
 	<cfargument name="label" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="labelPlacement" type="string" required="false" hint="See documentation for @textField.">
 	<cfargument name="prepend" type="string" required="false" hint="See documentation for @textField.">
@@ -128,7 +128,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="textAreaTag", input=arguments);
+		$args(name="textAreaTag", args=arguments);
 		arguments.property = arguments.name;
 		arguments.objectName = {};
 		arguments.objectName[arguments.name] = arguments.content;
@@ -139,15 +139,16 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="radioButtonTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a radio button form control based on the supplied `name`."
+<cffunction name="radioButtonTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a radio button form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Basic usage usually involves a `label`, `name`, `value`, and `checked` value --->
 		<cfoutput>
-		    <p>
+		    <fieldset>
+				<legend>Gender</legend>
 			    ##radioButtonTag(name="gender", value="m", label="Male", checked=true)##<br />
 		        ##radioButtonTag(name="gender", value="f", label="Female")##
-			</p>
+			</fieldset>
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,checkBoxTag,passwordFieldTag,hiddenFieldTag,textAreaTag,fileFieldTag,selectTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
@@ -162,7 +163,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="radioButtonTag", input=arguments);
+		$args(name="radioButtonTag", args=arguments);
 		arguments.property = arguments.name;
 		arguments.objectName = {};
 		if (arguments.checked)
@@ -183,13 +184,27 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="checkBoxTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a check box form control based on the supplied `name`."
+<cffunction name="checkBoxTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a check box form control based on the supplied `name`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- view code --->
+		<!--- Example 1: Basic usage involves a `label`, `name`, and `value` --->
 		<cfoutput>
-		    <p>##checkBoxTag(name="subscribe", value="true", label="Subscribe to our newsletter", checked=false)##</p>
+		    ##checkBoxTag(name="subscribe", value="true", label="Subscribe to our newsletter", checked=false)##
 		</cfoutput>
+		
+		<!--- Example 2: Loop over a query to display choices and whether or not they are checked --->
+		<!--- - Controller code --->
+		<cfset pizza = model("pizza").findByKey(session.pizzaId)>
+		<cfset selectedToppings = pizza.toppings()>
+		<cfset toppings = model("topping").findAll(order="name")>
+		
+		<!--- View code --->
+		<fieldset>
+			<legend>Toppings</legend>
+			<cfoutput query="toppings">
+				##checkBoxTag(name="toppings", value="true", label=toppings.name, checked=YesNoFormat(ListFind(ValueList(selectedToppings.id), toppings.id))##
+			</cfoutput>
+		</fieldset>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,radioButtonTag,passwordFieldTag,hiddenFieldTag,textAreaTag,fileFieldTag,selectTag,dateTimeSelectTag,dateSelectTag,timeSelectTag">
 	<cfargument name="name" type="string" required="true" hint="See documentation for @textFieldTag.">
@@ -204,7 +219,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="checkBoxTag", input=arguments);
+		$args(name="checkBoxTag", args=arguments);
 		arguments.checkedValue = arguments.value;
 		arguments.property = arguments.name;
 		arguments.objectName = {};
@@ -227,15 +242,20 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="selectTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a select form control based on the supplied `name` and `options`."
+<cffunction name="selectTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a select form control based on the supplied `name` and `options`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
-		<!--- controller code --->
+		<!--- Controller code --->
 		<cfset cities = model("city").findAll()>
 
-		<!--- view code --->
+		<!--- View code --->
 		<cfoutput>
-		    <p>##selectTag(name="cityId", options=cities)##</p>
+		    ##selectTag(name="cityId", options=cities)##
+		</cfoutput>
+		
+		<!--- Do this when Wheels isn''t grabbing the correct values for the `option`s'' values and display texts --->
+		<cfoutput>
+			##selectTag(name="cityId", options=cities, valueField="id", textField="name")##
 		</cfoutput>
 	'
 	categories="view-helper,forms-plain" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,submitTag,textFieldTag,radioButtonTag,checkBoxTag,passwordFieldTag,hiddenFieldTag,textAreaTag,fileFieldTag,dateTimeSelectTags,dateSelectTags,timeSelectTags">
@@ -254,7 +274,7 @@
 	<cfargument name="appendToLabel" type="string" required="false" hint="See documentation for @textField.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="selectTag", input=arguments);
+		$args(name="selectTag", args=arguments);
 		arguments.property = arguments.name;
 		arguments.objectName = {};
 		arguments.objectName[arguments.name] = arguments.selected;

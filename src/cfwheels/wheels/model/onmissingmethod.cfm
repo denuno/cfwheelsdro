@@ -1,6 +1,6 @@
-<cffunction name="onMissingMethod" returntype="any" access="public" output="false" hint="This method handles dynamic finders, property and association methods. It is not part of the public API.">
-	<cfargument name="missingMethodName" type="string" required="true">
-	<cfargument name="missingMethodArguments" type="struct" required="true">
+<cffunction name="onMissingMethod" returntype="any" access="public" output="false" hint="This method handles dynamic finders, properties, and association methods. It is not part of the public API.">
+	<cfargument name="missingMethodName" type="string" required="true" hint="Name of method attempted to load.">
+	<cfargument name="missingMethodArguments" type="struct" required="true" hint="Name/value pairs of arguments that were passed to the attempted method call.">
 	<cfscript>
 		var loc = {};
 		if (Right(arguments.missingMethodName, 10) == "hasChanged" && StructKeyExists(variables.wheels.class.properties,ReplaceNoCase(arguments.missingMethodName, "hasChanged", "")))
@@ -55,14 +55,14 @@
 				loc.firstValue = arguments.missingMethodArguments.value;
 			else if (StructKeyExists(arguments.missingMethodArguments, "values"))
 				loc.firstValue = Trim(ListFirst(arguments.missingMethodArguments.values));
-			loc.addToWhere = "#loc.firstProperty# = '#loc.firstValue#'";
+			loc.addToWhere = loc.firstProperty & " " & $dynamicFinderOperator(loc.firstProperty) & " '" & loc.firstValue & "'";
 			if (Len(loc.secondProperty))
 			{
 				if (StructCount(arguments.missingMethodArguments) == 1)
 					loc.secondValue = Trim(ListLast(arguments.missingMethodArguments[1]));
 				else if (StructKeyExists(arguments.missingMethodArguments, "values"))
 					loc.secondValue = Trim(ListLast(arguments.missingMethodArguments.values));
-				loc.addToWhere = loc.addToWhere & " AND #loc.secondProperty# = '#loc.secondValue#'";
+				loc.addToWhere = loc.addToWhere & " AND " & loc.secondProperty & " " & $dynamicFinderOperator(loc.secondProperty) & " '" & loc.secondValue & "'";
 			}
 			arguments.missingMethodArguments.where = IIf(StructKeyExists(arguments.missingMethodArguments, "where"), "'(' & arguments.missingMethodArguments.where & ') AND (' & loc.addToWhere & ')'", "loc.addToWhere");
 			StructDelete(arguments.missingMethodArguments, "1");
@@ -78,6 +78,16 @@
 			$throw(type="Wheels.MethodNotFound", message="The method `#arguments.missingMethodName#` was not found in the `#variables.wheels.class.modelName#` model.", extendedInfo="Check your spelling or add the method to the model's CFC file.");
 	</cfscript>
 	<cfreturn loc.returnValue>
+</cffunction>
+
+<cffunction name="$dynamicFinderOperator" returntype="string" access="public" output="false">
+	<cfargument name="property" type="string" required="true">
+	<cfscript>
+		if (variables.wheels.class.properties[arguments.property].dataType == "text")
+			return "LIKE";
+		else
+			return "=";
+	</cfscript>
 </cffunction>
 
 <cffunction name="$associationMethod" returntype="any" access="public" output="false">
@@ -99,7 +109,7 @@
 				if (StructKeyExists(arguments.missingMethodArguments, "include"))
 					loc.include = "#loc.include#(#arguments.missingMethodArguments.include#)";
 				arguments.missingMethodArguments.include = loc.include;
-				loc.where = $keyWhereString(properties=loc.joinAssociation.foreignKey, keys=variables.wheels.class.keys);
+				loc.where = $keyWhereString(properties=loc.joinAssociation.foreignKey, keys=primaryKeys());
 				if (StructKeyExists(arguments.missingMethodArguments, "where"))
 					loc.where = "(#loc.where#) AND (#arguments.missingMethodArguments.where#)";
 				arguments.missingMethodArguments.where = loc.where;
@@ -113,7 +123,7 @@
 				loc.componentReference = model(loc.info.modelName);
 				if (loc.info.type == "hasOne")
 				{
-					loc.where = $keyWhereString(properties=loc.info.foreignKey, keys=variables.wheels.class.keys);
+					loc.where = $keyWhereString(properties=loc.info.foreignKey, keys=primaryKeys());
 					if (StructKeyExists(arguments.missingMethodArguments, "where"))
 						loc.where = "(#loc.where#) AND (#arguments.missingMethodArguments.where#)";
 					loc.name = ReplaceNoCase(arguments.missingMethodName, loc.key, "object"); // create a generic method name (example: "hasProfile" becomes "hasObject")
@@ -150,7 +160,6 @@
 					}
 					else if (loc.name == "setObject")
 					{
-						$setForeignKeyValues(missingMethodArguments=arguments.missingMethodArguments, keys=loc.info.foreignKey);
 						// single argument, must be either the key or the object
 						if (StructCount(arguments.missingMethodArguments) eq 1)
 						{
@@ -178,14 +187,14 @@
 							else if (StructKeyExists(arguments.missingMethodArguments, "key"))
 								loc.method = "updateByKey";
 							else
-								$throw(type="Wheels.IncorrectArguments", message="The `#loc.singularKey#` or `key` named argument is required.", extendedInfo="When using multiple arguments for #loc.name#() you must supply an object using the argument `#loc.singularKey#` or a key using the argument `key`, e.g. #loc.name#(#loc.singularKey#=post) or #loc.name#(key=post.id).");
+								$throw(type="Wheels.IncorrectArguments", message="The `#loc.key#` or `key` named argument is required.", extendedInfo="When using multiple arguments for #loc.name#() you must supply an object using the argument `#loc.key#` or a key using the argument `key`, e.g. #loc.name#(#loc.key#=post) or #loc.name#(key=post.id).");
 						}
 						$setForeignKeyValues(missingMethodArguments=arguments.missingMethodArguments, keys=loc.info.foreignKey);
 					}
 				}
 				else if (loc.info.type == "hasMany")
 				{
-					loc.where = $keyWhereString(properties=loc.info.foreignKey, keys=variables.wheels.class.keys);
+					loc.where = $keyWhereString(properties=loc.info.foreignKey, keys=primaryKeys());
 					if (StructKeyExists(arguments.missingMethodArguments, "where"))
 						loc.where = "(#loc.where#) AND (#arguments.missingMethodArguments.where#)";
 					loc.singularKey = singularize(loc.key);
@@ -333,7 +342,7 @@
 				}
 				else if (loc.info.type == "belongsTo")
 				{
-					loc.where = $keyWhereString(keys=loc.info.foreignKey, properties=variables.wheels.class.keys);
+					loc.where = $keyWhereString(keys=loc.info.foreignKey, properties=primaryKeys());
 					if (StructKeyExists(arguments.missingMethodArguments, "where"))
 						loc.where = "(#loc.where#) AND (#arguments.missingMethodArguments.where#)";
 					loc.name = ReplaceNoCase(arguments.missingMethodName, loc.key, "object"); // create a generic method name (example: "hasAuthor" becomes "hasObject")
@@ -350,15 +359,13 @@
 				}
 			}
 			if (Len(loc.method))
-				loc.returnValue = $invoke(componentReference=loc.componentReference, method=loc.method, argumentCollection=arguments.missingMethodArguments);
+				loc.returnValue = $invoke(componentReference=loc.componentReference, method=loc.method, invokeArgs=arguments.missingMethodArguments);
 		}
 	</cfscript>
 	<cfif StructKeyExists(loc, "returnValue")>
 		<cfreturn loc.returnValue>
 	</cfif>
 </cffunction>
-
-
 
 <cffunction name="$propertyValue" returntype="string" access="public" output="false" hint="Returns the object's value of the passed in property name. If you pass in a list of property names you will get the values back in a list as well.">
 	<cfargument name="name" type="string" required="true" hint="Name of property to get value for.">
@@ -384,7 +391,7 @@
 			if (arguments.setToNull)
 				arguments.missingMethodArguments[ListGetAt(arguments.keys, loc.i)] = "";
 			else
-				arguments.missingMethodArguments[ListGetAt(arguments.keys, loc.i)] = this[ListGetAt(variables.wheels.class.keys, loc.i)];
+				arguments.missingMethodArguments[ListGetAt(arguments.keys, loc.i)] = this[primaryKeys(loc.i)];
 		}
 	</cfscript>
 </cffunction>

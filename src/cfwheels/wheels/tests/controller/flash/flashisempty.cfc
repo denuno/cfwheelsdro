@@ -1,18 +1,29 @@
 <cfcomponent extends="wheelsMapping.test">
 
-	<cfset params = {controller="dummy", action="dummy"}>
-	<cfset controller = $controller(name="dummy").$createControllerObject(params)>
+	<cfinclude template="setup.cfm">
 
 	<cffunction name="test_flashIsEmpty_valid">
-		<cfset session.flash = {}>
-		<cfset result = controller.flashIsEmpty()>
-		<cfset assert("result IS StructIsEmpty(session.flash)")>
+		<cfset run_flashIsEmpty_valid()>
+		<cfset loc.controller.$setFlashStorage("cookie")>
+		<cfset run_flashIsEmpty_valid()>
 	</cffunction>
 	
+	<cffunction name="run_flashIsEmpty_valid">
+		<cfset loc.controller.flashClear()>
+		<cfset result = loc.controller.flashIsEmpty()>
+		<cfset assert("result IS true")>
+	</cffunction>
+
 	<cffunction name="test_flashIsEmpty_invalid">
-		<cfset session.flash = {success="congrats!"}>
-		<cfset result = controller.flashIsEmpty()>
-		<cfset assert("result IS StructIsEmpty(session.flash)")>
+		<cfset run_flashIsEmpty_invalid()>
+		<cfset loc.controller.$setFlashStorage("cookie")>
+		<cfset run_flashIsEmpty_invalid()>
 	</cffunction>
 	
+	<cffunction name="run_flashIsEmpty_invalid">
+		<cfset loc.controller.flashInsert(success="Congrats!")>
+		<cfset result = loc.controller.flashIsEmpty()>
+		<cfset assert("result IS false")>
+	</cffunction>
+
 </cfcomponent>

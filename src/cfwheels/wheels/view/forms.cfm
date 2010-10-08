@@ -16,7 +16,7 @@
 	<cfreturn "</form>">
 </cffunction>
 
-<cffunction name="startFormTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing the opening form tag. The form's action will be built according to the same rules as `URLFor`."
+<cffunction name="startFormTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing the opening form tag. The form's action will be built according to the same rules as `URLFor`. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
 		<!--- view code --->
@@ -27,7 +27,7 @@
 		</cfoutput>
 	'
 	categories="view-helper,forms-general" chapters="form-helpers-and-showing-errors" functions="URLFor,endFormTag,submitTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
-	<cfargument name="method" type="string" required="false" hint="The type of method to use in the form tag, `get` and `post` are the options.">
+	<cfargument name="method" type="string" required="false" hint="The type of method to use in the form tag. `get` and `post` are the options.">
 	<cfargument name="multipart" type="boolean" required="false" hint="Set to `true` if the form should be able to upload files.">
 	<cfargument name="spamProtection" type="boolean" required="false" hint="Set to `true` to protect the form against spammers (done with JavaScript).">
 	<cfargument name="route" type="string" required="false" default="" hint="See documentation for @URLFor.">
@@ -42,13 +42,14 @@
 	<cfargument name="port" type="numeric" required="false" hint="See documentation for @URLFor.">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="startFormTag", input=arguments);
+		$args(name="startFormTag", args=arguments);
 
 		// sets a flag to indicate whether we use get or post on this form, used when obfuscating params
 		request.wheels.currentFormMethod = arguments.method;
 
 		// set the form's action attribute to the URL that we want to send to
-		arguments.action = URLFor(argumentCollection=arguments);
+		if (!ReFindNoCase("^https?:\/\/", arguments.action))
+			arguments.action = URLFor(argumentCollection=arguments);
 
 		// make sure we return XHMTL compliant code
 		arguments.action = toXHTML(arguments.action);
@@ -76,7 +77,7 @@
 	<cfreturn loc.returnValue>
 </cffunction>
 
-<cffunction name="submitTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a submit button `form` control."
+<cffunction name="submitTag" returntype="string" access="public" output="false" hint="Builds and returns a string containing a submit button `form` control. Note: Pass any additional arguments like `class`, `rel`, and `id`, and the generated tag will also include those values as HTML attributes."
 	examples=
 	'
 		!--- view code --->
@@ -90,10 +91,10 @@
 	categories="view-helper,forms-general" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
 	<cfargument name="value" type="string" required="false" hint="Message to display in the button form control.">
 	<cfargument name="image" type="string" required="false" hint="File name of the image file to use in the button form control.">
-	<cfargument name="disable" type="any" required="false" hint="Whether to disable the button upon clicking (prevents double-clicking).">
+	<cfargument name="disable" type="any" required="false" hint="Whether or not to disable the button upon clicking. (prevents double-clicking.)">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="submitTag", reserved="type,src", input=arguments);
+		$args(name="submitTag", reserved="type,src", args=arguments);
 		if (Len(arguments.disable))
 		{
 			loc.onclick = "this.disabled=true;";
@@ -134,14 +135,14 @@
 		</cfoutput>
 	'
 	categories="view-helper,forms-general" chapters="form-helpers-and-showing-errors" functions="URLFor,startFormTag,endFormTag,textField,radioButton,checkBox,passwordField,hiddenField,textArea,fileField,select,dateTimeSelect,dateSelect,timeSelect">
-	<cfargument name="content" type="string" required="false" hint="Content to the user inside the button.">
-	<cfargument name="type" type="string" required="false" hint="The type for the button: button, reset, submit.">
+	<cfargument name="content" type="string" required="false" hint="Content to display inside the button.">
+	<cfargument name="type" type="string" required="false" hint="The type for the button: `button`, `reset`, or `submit`.">
 	<cfargument name="image" type="string" required="false" hint="File name of the image file to use in the button form control.">
 	<cfargument name="value" type="string" required="false" hint="The value of the button when submitted.">
-	<cfargument name="disable" type="any" required="false" hint="Whether to disable the button upon clicking (prevents double-clicking).">
+	<cfargument name="disable" type="any" required="false" hint="Whether or not to disable the button upon clicking. (Prevents double-clicking.)">
 	<cfscript>
 		var loc = {};
-		$insertDefaults(name="buttonTag", input=arguments);
+		$args(name="buttonTag", args=arguments);
 
 		if (Len(arguments.disable))
 		{
@@ -329,18 +330,15 @@
 	<cfargument name="property" type="string" required="true">
 	<cfargument name="label" type="string" required="true">
 	<cfscript>
-		var loc = {};
-		if (arguments.label eq false)
+		var object = false;
+		if (Compare("false", arguments.label) == 0)
 			return "";
-		if (arguments.label eq true and !IsStruct(arguments.objectName))
+		if (arguments.label == "useDefaultLabel" && !IsStruct(arguments.objectName))
 		{
-			if (IsObject(arguments.objectName))
-				loc.object = arguments.objectName;
-			else
-				loc.object = $getObject(arguments.objectName);
-			if (IsObject(loc.object))
-				return loc.object.$label(arguments.property);
+			object = $getObject(arguments.objectName);
+			if (IsObject(object))
+				return object.$label(arguments.property);
 		}
-		return arguments.label;
 	</cfscript>
+	<cfreturn arguments.label />
 </cffunction>

@@ -1,17 +1,13 @@
-<cffunction name="isSecure" returntype="boolean" access="public" output="false" hint="Returns whether wheels is communicating over a secure port."
+<cffunction name="isSecure" returntype="boolean" access="public" output="false" hint="Returns whether Wheels is communicating over a secure port."
 	examples=
 	'
-		<cfset requestIsSecure = isSecure()>
+		<!--- Redirect non-secure connections to the secure version --->
+		<cfif not isSecure()>
+			<cfset redirectTo(protocol="https")>
+		</cfif>
 	'
 	categories="controller-request,miscellaneous" chapters="" functions="isGet,isPost,isAjax">
-	<cfscript>
-		var returnValue = "";
-		if (request.cgi.server_port_secure == true)
-			returnValue = true;
-		else
-			returnValue = false;
-	</cfscript>
-	<cfreturn returnValue>
+	<cfreturn (request.cgi.server_port_secure eq true)>
 </cffunction>
 
 <cffunction name="isAjax" returntype="boolean" access="public" output="false" hint="Returns whether the page was called from JavaScript or not."
@@ -20,49 +16,28 @@
 		<cfset requestIsAjax = isAjax()>
 	'
 	categories="controller-request,miscellaneous" chapters="" functions="isGet,isPost,isSecure">
-	<cfscript>
-		var returnValue = "";
-		if (request.cgi.http_x_requested_with == "XMLHTTPRequest")
-			returnValue = true;
-		else
-			returnValue = false;
-	</cfscript>
-	<cfreturn returnValue>
+	<cfreturn (request.cgi.http_x_requested_with is "XMLHTTPRequest")>
 </cffunction>
 
-<cffunction name="isGet" returntype="boolean" access="public" output="false" hint="Returns whether the request was a normal (GET) request or not."
+<cffunction name="isGet" returntype="boolean" access="public" output="false" hint="Returns whether the request was a normal `GET` request or not."
 	examples=
 	'
 		<cfset requestIsGet = isGet()>
 	'
 	categories="controller-request,miscellaneous" chapters="" functions="isAjax,isPost,isSecure">
-	<cfscript>
-		var returnValue = "";
-		if (request.cgi.request_method == "get")
-			returnValue = true;
-		else
-			returnValue = false;
-	</cfscript>
-	<cfreturn returnValue>
+	<cfreturn (request.cgi.request_method is "get")>
 </cffunction>
 
-<cffunction name="isPost" returntype="boolean" access="public" output="false" hint="Returns whether the request came from a form submission or not."
+<cffunction name="isPost" returntype="boolean" access="public" output="false" hint="Returns whether the request came from a form `POST` submission or not."
 	examples=
 	'
 		<cfset requestIsPost = isPost()>
 	'
 	categories="controller-request,miscellaneous" chapters="" functions="isAjax,isGet,isSecure">
-	<cfscript>
-		var returnValue = "";
-		if (request.cgi.request_method == "post")
-			returnValue = true;
-		else
-			returnValue = false;
-	</cfscript>
-	<cfreturn returnValue>
+	<cfreturn (request.cgi.request_method is "post")>
 </cffunction>
 
-<cffunction name="pagination" returntype="struct" access="public" output="false" hint="Returns a struct with information about the specificed paginated query. The variables that will be returned are `currentPage`, `totalPages` and `totalRecords`."
+<cffunction name="pagination" returntype="struct" access="public" output="false" hint="Returns a struct with information about the specificed paginated query. The keys that will be included in the struct are `currentPage`, `totalPages` and `totalRecords`."
 	examples=
 	'
 		<cfparam name="params.page" default="1">
@@ -75,10 +50,8 @@
 		if (application.wheels.showErrorInformation)
 		{
 			if (!StructKeyExists(request.wheels, arguments.handle))
-			{
 				$throw(type="Wheels.QueryHandleNotFound", message="Wheels couldn't find a query with the handle of `#arguments.handle#`.", extendedInfo="Make sure your `findAll` call has the `page` argument specified and matching `handle` argument if specified.");
-			}
 		}
+		return request.wheels[arguments.handle]; 
 	</cfscript>
-	<cfreturn request.wheels[arguments.handle]>
 </cffunction>
