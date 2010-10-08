@@ -5,7 +5,7 @@
 		class="org.h2.Driver" 
 		host="localhost" 
 		port="3306" 
-		database="${distro.name}"
+		database="@distro.name@"
 		username="@dsn.username@" 
 		password="@dsn.password@" 
 		blob="false"

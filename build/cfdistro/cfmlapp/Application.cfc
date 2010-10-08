@@ -1,14 +1,16 @@
 <cfcomponent extends="framework">
-	
+
 	<cfscript>
 	this.mappings["/distroManagerAJAX"] = expandPath("/cfdistro/cfmlapp/");
 	this.name = 'fw1-distroManagerAJAX';
+
+
 	resp = getPageContext().getResponse();
-	
+
 	variables.framework = {
 	  base="/distroManagerAJAX",
+	  baseURL=getContextRoot(),
 	  action = 'action',
-	  // base = omitted so that the framework calculates a sensible default
 	  usingSubsystems = false,
 	  defaultSubsystem = 'home',
 	  defaultSection = 'main',
@@ -19,22 +21,21 @@
 	  // or: defaultSection & subsystemDelimiter & defaultSection & '.' & defaultItem
 	  error = 'distro.error', // defaultSection & '.error'
 	  // or: defaultSection & subsystemDelimiter & defaultSection & '.error'
-	  reload = 'reload',
+	  reload = 'init',
 	  password = 'true',
 	  reloadApplicationOnEveryRequest = false,
 	  preserveKeyURLKey = 'fw1pk',
 	  maxNumContextsPreserved = 10,
-	  baseURL = getContextroot() & "/index.cfm",
 	  applicationKey = 'org.corfield.framework'
-	};	
+	};
 	//base = replaceNoCase(getDirectoryFromPath(getCurrentTemplatePath()), expandPath(""), "")
-	
-	function setupApplication() 
+
+	function setupApplication()
 	{
-		setBeanFactory(createObject("component", "cfdistro.cfmlapp.models.ObjectFactory").init(expandPath("/cfdistro/cfmlapp/config/beans.xml.cfm")));	
+		setBeanFactory(createObject("component", "cfdistro.cfmlapp.models.ObjectFactory").init(expandPath("/cfdistro/cfmlapp/config/beans.xml.cfm")));
 	}
-	
-/* 
+
+/*
   total hack because urlrewrite clobbers request content for some reason!
  */
 	function onRequestStart(targetPath) {
@@ -51,8 +52,8 @@
 			}
 		}
 		super.onRequestStart(targetPath);
-	}	
-	
+	}
+
 	</cfscript>
-	
+
 </cfcomponent>

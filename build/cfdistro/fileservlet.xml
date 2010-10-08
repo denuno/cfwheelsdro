@@ -2,11 +2,11 @@
 	basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
 	<target name="fileservelet.servlet.install">
-		<mkdir dir="${war.temp.dir}/WEB-INF/classes"/>
-		<javac-ecj srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" 
+		<mkdir dir="${war.target.dir}/WEB-INF/classes"/>
+		<javac-ecj srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.target.dir}/WEB-INF/classes" 
 			classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
 
-		<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
+		<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml">
 			<insert path="web-app/servlet[1]" position="before">
 				<![CDATA[
 				<servlet>
@@ -36,10 +36,11 @@
 		<attribute name="urlpattern" default="" />
 		<element name="args" optional="true" />
 		<sequential>
-			<mkdir dir="${war.temp.dir}/WEB-INF/classes"/>
-			<javac-ecj srcdir="${cfdistro.basedir}/java/fileservlet/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}"/>
+			<mkdir dir="${war.target.dir}/WEB-INF/classes"/>
+			<echo message="Adding fileServlet for @{urlpattern} serving content from: @{directory}" />
+			<javac-ecj srcdir="${cfdistro.basedir}/java/fileservlet/src/servlet" destdir="${war.target.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}"/>
 			
-			<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
+			<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml">
 				<insert path="web-app/servlet[1]" position="before">
 					<![CDATA[
 					<servlet>

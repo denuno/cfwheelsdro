@@ -26,7 +26,7 @@
 						<param type="token" name="src.dir" value="${src.dir}"/>
 						<param type="token" name="pub.dir" value="${pub.dir}"/>
 						<param type="token" name="lib.dir" value="${lib.dir}"/>
-						<param type="token" name="war.temp.dir" value="${war.temp.dir}"/>
+						<param type="token" name="war.target.dir" value="${war.target.dir}"/>
 						<param type="propertiesfile" value="${creds.token.file}" />
 					</filterreader>
 				</filterchain>

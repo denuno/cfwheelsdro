@@ -65,6 +65,44 @@
           <cfset rc.departments = getDepartmentService().list() />
      </cffunction>
 
+     <cffunction name="testrewrite" access="public" output="false" returntype="void">
+          <cfargument name="rc" type="struct" required="true" />
+<!---
+			<cfset var urlregex = rc.urlregex />
+			<cfset var fromUrl = rc.fromUrl />
+ --->
+			<cfscript>
+				fromUrl = "/rewrite-status";
+				toUrl = "/rewrite-status";
+
+				FileInputStream = createObject("java","java.io.FileInputStream");
+				MockRequest = createObject("java","org.tuckey.web.testhelper.MockRequest");
+				MockResponse = createObject("java","org.tuckey.web.testhelper.MockResponse");
+				Conf = createObject("java","org.tuckey.web.filters.urlrewrite.Conf");
+				RewrittenUrl = createObject("java","org.tuckey.web.filters.urlrewrite.RewrittenUrl");
+				UrlRewriteWrappedResponse = createObject("java","org.tuckey.web.filters.urlrewrite.UrlRewriteWrappedResponse");
+				UrlRewriter = createObject("java","org.tuckey.web.filters.urlrewrite.UrlRewriter");
+				loglev = createObject("java","org.tuckey.web.filters.urlrewrite.utils.Log");
+				loglev.setLevel("DEBUG");
+
+				conf = Conf.init(FileInputStream.init("/workspace/cfdistro/build/urlrewrite.xml"), "urlrewrite.xml");
+				rewriter = UrlRewriter.init(conf);
+				mockreq = MockRequest.init(fromUrl);
+				mockresp = MockResponse.init();
+				dump(rewriter.processRequest(mockreq, mockresp));
+				rewrittenUrl = rewriter.processRequest(mockreq, mockresp);
+				writeoutput("Could not rewrite URL from:" & fromUrl & " to:" & toUrl & rewrittenUrl.getTarget());
+				writeoutput("Rewrite from:" & fromUrl & " to:" & toUrl & " did not succeed" & toUrl & rewrittenUrl.getTarget());
+				abort;
+
+			</cfscript>
+		<cfif NOT structKeyExists(rc,"message")>
+			<cfset rc.message = "" />
+		</cfif>
+          <!--- we need to retrieve all departments for the drop down selection --->
+          <cfset rc.departments = getDepartmentService().list() />
+     </cffunction>
+
      <cffunction name="persist" access="public" output="false" returntype="void">
           <cfargument name="rc" type="struct" required="true" />
           <!--- sending as named arguments, service will handle validation, returns new distro if not found --->
@@ -103,7 +141,7 @@
 	     <cfif structKeyExists(rc,"target")>
 		     <cfset target = rc.target>
 	     <cfelse>
-		     <cfset target = "build.localdev">
+		     <cfset target = "build">
 		</cfif>
 	     <cfset var results = rc.distro.build(target) />
           <cfset rc.message = "Build Results<blockquote><pre>" & results.outtext & results.errortext & "</pre></blockquote>" />

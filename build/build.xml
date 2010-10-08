@@ -6,20 +6,12 @@
         cfwheels development and deployment
     </description>
 
-	<target name="help" description="lists main targets">
-		<java classname="org.apache.tools.ant.Main">
-			<arg value="-buildfile" />
-			<arg value="${ant.file}" />
-			<arg value="-projecthelp" />
-		</java>
-	</target>
-
 	<loadproperties srcfile="build.properties" />
 
 	<import file="${cfdistro.build.file}"/>
 
 
-	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir">
+	<target name="build.localdev" depends="src.to.mappings.xml, exists.src.dir, cfdistro.build">
 		<!-- add mappings -->
 		<!--
 		<mapping physical="${basedir}/../../docs" virtual="/docs"/>
@@ -29,8 +21,6 @@
 		<!-- add custom tags example
 		<customtag physical="${src.dir}/cfdistro/ext/cfmltags/cfantrunner" virtual="/cfantrunner"/>
 		 -->
-		<!-- run cfdistro build -->
-		<antcontrib:runtarget target="cfdistro.build.localdev" />
 		<!-- use fileServlet to map external resources  -->
 		<fileservlet servletname="fileServlet" directory="${src.dir}/../pub" urlpattern="/pub/*" />
 		<!-- add urlrewrite filter and rewrite rules -->
@@ -62,21 +52,6 @@
 		<urlrewriteout name="pubToRoot" from="^/pub/(.*)" to="/$1"/>
 -->
 		<urlrewriteout name="rootToContextPath" from="/(.*)" to="%{context-path}/$1" type="forward" />
-		<antcontrib:if>
-			<or>
-				<equals arg1="${default.cfengine}" arg2="acf" />
-				<equals arg1="${default.cfengine}" arg2="obd" />
-			</or>
-			<then>
-				<echo message="This CFML Engine can't run from a mapping, copying files to war root.${line.separator}
-				Any 'live' development will have to be done to ${war.temp.dir}/cfwheels" />
-				<copy todir="${war.temp.dir}/cfwheels" verbose="false">
-					<fileset dir="${src.dir}/cfwheels" />
-				</copy>
-			</then>
-			<else>
-			</else>
-		</antcontrib:if>
 		<echo file="${war.temp.dir}/Application.cfc">
 			<![CDATA[<cfcomponent output="false">
 			<cfinclude template="/cfwheels/wheels/functions.cfm" />

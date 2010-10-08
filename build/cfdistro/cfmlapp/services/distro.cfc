@@ -19,7 +19,6 @@
 
 		// FIRST
 		distro = new();
-		build = new
 		distro.setId("1");
 		distro.setDistroName("cfdistro");
 		distro.setBuildDirectory(expandpath("/cfdistro/") & "/../../build");
@@ -32,7 +31,6 @@
 		variables.distros[distro.getId()] = distro;
 
 		distro = new();
-		build = new
 		distro.setId("2");
 		distro.setDistroName("denstar");
 		distro.setBuildDirectory(expandpath("/cfdistro/") & "/../../../denstar/build");
@@ -43,7 +41,7 @@
 		distro.setDepartment(deptService.get("1"));
 
 		variables.distros[distro.getId()] = distro;
-		
+
 		variables.nextid = 3;
 
 		</cfscript>

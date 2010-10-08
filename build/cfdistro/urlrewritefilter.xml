@@ -1,31 +1,11 @@
 <project name="urlrewritefilter" default="urlrewritefilter.update"
 	basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
-	<target name="urlrewritefilter.update">
-		<property name="source-root" value="${cfdistro.basedir}/java/urlrewritefilter" />
-		<property name="repository.URL" value="http://urlrewritefilter.googlecode.com/svn" />
-		<java classname="org.tmatesoft.svn.cli.SVN" dir="${source-root}/../"
-			fork="true">
-			<arg value="export" />
-			<arg value="--force" />
-			<arg value="${repository.URL}/trunk/" />
-			<classpath>
-				<pathelement location="${cfdistro.basedir}/lib/ganymed.jar" />
-				<pathelement location="${cfdistro.basedir}/lib/svnkit.jar" />
-				<pathelement location="${cfdistro.basedir}/lib/svnkit-cli.jar" />
-			</classpath>
-		</java>
-	</target>
 
-	<target name="urlrewritefilter.servlet.install">
-		<requires-ext resource="${ext.dir}/urlrewritefilter/"/>
-		<copy todir="${war.temp.dir}/WEB-INF/" overwrite="true">
-			<fileset dir="${ext.dir}/urlrewritefilter/">
-				<include name="**" />
-			</fileset>
-		</copy>
+	<target name="urlrewritefilter.servlet.install" depends="exists.urlrewrite.xml">
+		
 		<property name="urlrewritefilter.log.level" value="WARN" />
 		<property name="urlrewritefilter.reload.interval" value="-1" />
-		<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml" outputter="simple">
+		<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml" outputter="simple">
 			<insert path="web-app/servlet[1]" position="before">
 				<![CDATA[
 		        <filter>
@@ -64,12 +44,12 @@
 		<attribute name="enabled" default="true" />
 		<attribute name="note" default="@{name}"/>
 		<text name="rewritexml" optional="yes"/>
-
-		<element name="args" optional="true" />
 		<sequential>
 			<echo message="rewrite: @{name} from: @{from} to: @{to}" />
-			<xmltask source="${war.temp.dir}/WEB-INF/urlrewrite.xml"
-				dest="${war.temp.dir}/WEB-INF/urlrewrite.xml" outputter="simple">
+			<antcontrib:var name="rule.exists" unset="true"/>
+			<xmltask source="${war.target.dir}/WEB-INF/urlrewrite.xml"
+				dest="${war.target.dir}/WEB-INF/urlrewrite.xml"
+				outputter="simple">
 				<xmlcatalog refId="commonDTDs"/>
 				<print comment="existing url name" path="urlrewrite/rule[name='@{name}']"/>
 				<copy path="urlrewrite/rule[name='@{name}']" attrValue="true" property="rule.exists"/>
@@ -78,6 +58,7 @@
 		        <rule enabled="@{enabled}">
 					<name>@{name}</name>
 					<note>@{note}</note>
+					@{rewritexml}
 		            <from casesensitive="false">@{from}</from>
 		            <to last="@{last}" type="@{type}">@{to}</to>
 		        </rule>
@@ -88,6 +69,7 @@
 		        <rule enabled="@{enabled}">
 					<name>@{name}</name>
 					<note>@{note}</note>
+					@{rewritexml}
 		            <from casesensitive="false">@{from}</from>
 		            <to last="@{last}" type="@{type}">@{to}</to>
 		        </rule>
@@ -109,9 +91,10 @@
 
 		<element name="args" optional="true" />
 		<sequential>
+			<antcontrib:var name="rule.exists" unset="true"/>
 					<echo message="rewrite-outbound: @{name} from: @{from} to: @{to}" />
-					<xmltask source="${war.temp.dir}/WEB-INF/urlrewrite.xml"
-						dest="${war.temp.dir}/WEB-INF/urlrewrite.xml" outputter="simple">
+					<xmltask source="${war.target.dir}/WEB-INF/urlrewrite.xml"
+						dest="${war.target.dir}/WEB-INF/urlrewrite.xml">
 						<xmlcatalog refId="commonDTDs"/>
 						<print comment="existing url name" path="urlrewrite/rule[name='@{name}']"/>
 						<copy path="urlrewrite/rule[name='@{name}']" attrValue="true" property="rule.exists"/>
@@ -144,8 +127,9 @@
 		<text name="rewritexml"/>
 		<element name="args" optional="true" />
 		<sequential>
-			<xmltask source="${war.temp.dir}/WEB-INF/urlrewrite.xml"
-				dest="${war.temp.dir}/WEB-INF/urlrewrite.xml" outputter="simple">
+			<antcontrib:var name="rule.exists" unset="true"/>
+			<xmltask source="${war.target.dir}/WEB-INF/urlrewrite.xml"
+				dest="${war.target.dir}/WEB-INF/urlrewrite.xml">
 				<xmlcatalog refId="commonDTDs"/>
 				<copy path="urlrewrite/rule[name='@{name}']" attrValue="true" property="rule.exists"/>
 				<print path="urlrewrite/rule[name='@{name}']"/>
@@ -167,8 +151,8 @@
 				<actions>
 					<antcontrib:var name="rule.exists" unset="true"/>
 					<echo message="@{virtual}" />
-					<xmltask source="${war.temp.dir}/WEB-INF/urlrewrite.xml"
-						dest="${war.temp.dir}/WEB-INF/urlrewrite.xml" outputter="simple">
+					<xmltask source="${war.target.dir}/WEB-INF/urlrewrite.xml"
+						dest="${war.target.dir}/WEB-INF/urlrewrite.xml">
 						<xmlcatalog refId="commonDTDs"/>
 						<copy path="urlrewrite/rule[from='@{virtual}']" attrValue="true" property="rule.exists"/>
 						<print path="urlrewrite/rule[from='@{virtual}']"/>
@@ -193,5 +177,58 @@
 			</call>
 		</xmltask>
 	</target>	
+
 	
+	<target name="exists.urlrewrite.xml">
+		<property name="urlrewrite.file" value="${basedir}/urlrewrite.xml" />
+		<sanitizeContextPath/>
+		<requires-ext resource="${ext.dir}/urlrewritefilter/"/>
+		<available file="${basedir}/urlrewrite.${build.type}.xml" type="file" property="exists.urlrewrite.xml" />
+		<antcontrib:if>
+			<equals arg1="${exists.urlrewrite.xml}" arg2="true" />
+			<then>
+				<antcontrib:var name="${urlrewrite.file}" unset="true" />
+				<property name="urlrewrite.file" location="${basedir}/urlrewrite.${build.type}.xml" />
+			</then>
+			<else>
+				<available file="${urlrewrite.file}" type="file" property="exists.urlrewrite.xml" />
+			</else>
+		</antcontrib:if>
+		<antcontrib:if>
+			<equals arg1="${exists.urlrewrite.xml}" arg2="true" />
+			<then>
+				<copy todir="${war.target.dir}/WEB-INF/" overwrite="true">
+					<fileset dir="${ext.dir}/urlrewritefilter/">
+						<include name="**" />
+					</fileset>
+				</copy>
+				<copy todir="${war.target.dir}/WEB-INF/" overwrite="true" file="${urlrewrite.file}" verbose="true" />
+			</then>
+			<else>
+				<echo message="No urlrewrite.xml to import : ${basedir}/urlrewrite.xml does not exist." />
+				<copy todir="${war.target.dir}/WEB-INF/" overwrite="true">
+					<fileset dir="${ext.dir}/urlrewritefilter/">
+						<include name="**" />
+					</fileset>
+				</copy>
+			</else>
+		</antcontrib:if>
+	</target>
+	
+	<target name="urlrewritefilter.update">
+		<property name="source-root" value="${cfdistro.basedir}/java/urlrewritefilter" />
+		<property name="repository.URL" value="http://urlrewritefilter.googlecode.com/svn" />
+		<java classname="org.tmatesoft.svn.cli.SVN" dir="${source-root}/../"
+			fork="true">
+			<arg value="export" />
+			<arg value="--force" />
+			<arg value="${repository.URL}/trunk/" />
+			<classpath>
+				<pathelement location="${cfdistro.basedir}/lib/ganymed.jar" />
+				<pathelement location="${cfdistro.basedir}/lib/svnkit.jar" />
+				<pathelement location="${cfdistro.basedir}/lib/svnkit-cli.jar" />
+			</classpath>
+		</java>
+	</target>
+
 </project>

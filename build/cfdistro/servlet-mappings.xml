@@ -2,21 +2,21 @@
 	basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
 	<target name="servlet.fileservlet.install" if="exists.mappings.xml">
-	<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
+	<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml">
 		<xmlcatalog refId="commonDTDs"/>
 		<insert path="web-app/servlet[1]" position="before">
 			<![CDATA[
-				<!-- railo file servlet -->
-				<servlet>
-					<servlet-name>FileServlet</servlet-name>
-					<description>File Servlet for simple files</description>
-					<servlet-class>railo.loader.servlet.FileServlet</servlet-class>
-					<load-on-startup>2</load-on-startup>
-				</servlet>	 
-				<servlet-mapping> 
-					<servlet-name>FileServlet</servlet-name> 
-					<url-pattern>/</url-pattern> 
-				</servlet-mapping> 
+	<!-- railo file servlet -->
+	<servlet>
+		<servlet-name>FileServlet</servlet-name>
+		<description>File Servlet for simple files</description>
+		<servlet-class>railo.loader.servlet.FileServlet</servlet-class>
+		<load-on-startup>2</load-on-startup>
+	</servlet>	 
+	<servlet-mapping> 
+		<servlet-name>FileServlet</servlet-name> 
+		<url-pattern>/</url-pattern> 
+	</servlet-mapping> 
 			]]>
 		</insert>
 	</xmltask>
@@ -42,29 +42,40 @@
 				<param name="physical" path="@physical" default="NONE" />
 				<actions>
 					<antcontrib:var name="rule.exists" unset="true"/>
-					<echo message="@{virtual}" />
-					<xmltask source="${war.temp.dir}/WEB-INF/web.xml"
-						dest="${war.temp.dir}/WEB-INF/web.xml">
-						<xmlcatalog refId="commonDTDs"/>
-						<copy path="web-app/servlet-mapping[url-pattern='@{virtual}/index.cfm/*']/text()" attrValue="true" property="rule.exists"/>
-						<print path="web-app/servlet-mapping[url-pattern='@{virtual}/index.cfm/*']"/>
-						<replace path="web-app/servlet-mapping[url-pattern='@{virtual}/index.cfm/*']" if="rule.exists">
-						<![CDATA[
-						<servlet-mapping>
-							<servlet-name>${cfmlServletName}</servlet-name>
-							<url-pattern>@{virtual}/index.cfm/*</url-pattern>
-						</servlet-mapping>
-						]]>
-						</replace>
-						<insert path="web-app/servlet[last()]" position="after" unless="rule.exists">
-						<![CDATA[
-						<servlet-mapping>
-							<servlet-name>${cfmlServletName}</servlet-name>
-							<url-pattern>@{virtual}/index.cfm/*</url-pattern>
-						</servlet-mapping>
-						]]>
-						</insert>
-					</xmltask>
+					<antcontrib:for param="file">
+					    <fileset dir="@{physical}" includes="*.cfm *.cfc"/>
+					    <sequential>
+						<antcontrib:var name="cfmlfile" unset="true" />
+						<antcontrib:propertyregex property="cfmlfile"
+						              input="@{file}"
+						              regexp=".*[/|\\]+(.*)"
+						              select="\1"
+						              casesensitive="false" />
+						<echo message="@{virtual}/${cfmlfile}/*" />
+						<xmltask source="${war.target.dir}/WEB-INF/web.xml"
+							dest="${war.target.dir}/WEB-INF/web.xml">
+							<xmlcatalog refId="commonDTDs"/>
+							<copy path="web-app/servlet-mapping[url-pattern='@{virtual}/${cfmlfile}/*']/text()" attrValue="true" property="rule.exists"/>
+							<print path="web-app/servlet-mapping[url-pattern='@{virtual}/${cfmlfile}/*']"/>
+							<replace path="web-app/servlet-mapping[url-pattern='@{virtual}/${cfmlfile}/*']" if="rule.exists">
+							<![CDATA[
+	<servlet-mapping>
+		<servlet-name>${cfmlServletName}</servlet-name>
+		<url-pattern>@{virtual}/${cfmlfile}/*</url-pattern>
+	</servlet-mapping>
+							]]>
+							</replace>
+							<insert path="web-app/servlet[last()]" position="after" unless="rule.exists">
+							<![CDATA[
+	<servlet-mapping>
+		<servlet-name>${cfmlServletName}</servlet-name>
+		<url-pattern>@{virtual}/${cfmlfile}/*</url-pattern>
+	</servlet-mapping>
+							]]>
+							</insert>
+						</xmltask>
+					    </sequential>
+					</antcontrib:for>
 				</actions>
 			</call>
 		</xmltask>

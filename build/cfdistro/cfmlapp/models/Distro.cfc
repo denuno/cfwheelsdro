@@ -79,15 +79,15 @@
 
 					<target name="build.localdev.start.launch">
 						<antcontrib:runtarget target="cfdistro.build.localdev.start.launch" />
-					</target>	
+					</target>
 
 					<target name="build.localdev.start" depends="build.localdev">
-						<antcontrib:runtarget target="runwar.start.background" />
-					</target>				
+						<antcontrib:runtarget target="runwar.start" />
+					</target>
 					<target name="build.localdev.stop">
 						<antcontrib:runtarget target="runwar.stop" />
-					</target>	
-					
+					</target>
+
 					<target name="build.war.binary" depends="compile-cf">
 						<antcall target="add-cfantrunner" />
 						<antcall target="cfdistro.build.war.binary" />
@@ -103,6 +103,7 @@
 		<cfargument name="missingMethodArguments" type="struct" />
 		<cfset var property = "" />
 		<cfset var value = "" />
+
 		<cfif findNoCase("get",arguments.missingMethodName) is 1>
 			<cfset property = replaceNoCase(arguments.missingMethodName,"get","") />
 			<cfreturn variables[property] />

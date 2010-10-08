@@ -7,7 +7,7 @@
 				<fileset dir="${cfdistro.basedir}/ext/ddlutils/lib">
 					<include name="*.jar" />
 				</fileset>
-				<fileset dir="${war.temp.dir}/WEB-INF/cfusion/lib">
+				<fileset dir="${war.target.dir}/WEB-INF/cfusion/lib">
 					<include name="*.jar" />
 				</fileset>
 			</path>
@@ -17,16 +17,18 @@
 				<fileset dir="${cfdistro.basedir}/ext/ddlutils/lib">
 					<include name="*.jar" />
 				</fileset>
-				<fileset dir="${war.temp.dir}/WEB-INF/lib">
+				<fileset dir="${war.target.dir}/WEB-INF/lib">
 					<include name="*.jar" />
 				</fileset>
 			</path>
 		</else>
 	</antcontrib:if>
 
-	<macrodef name="dsn-schema">
+	<macrodef name="dsn-import">
 		<attribute name="dsn" />
 		<attribute name="schemafile" />
+		<attribute name="datafile" default=""/>
+		<attribute name="dropdatabase" default="false"/>
 		<sequential>
 			<requires-ext resource="/ext/ddlutils/" />
 			<antcontrib:runtarget target="exists.datasources.xml" />
@@ -60,45 +62,66 @@
 					<param name="jdbcstring" path="@jdbcstring" default="jdbc:mysql://{host}:{port}/{database}" />
 					<actions>
 						<echo message="connecting: @{username} @{password} @ @{jdbcstring}" />
-						<ddlToDatabase schemaFile="@{schemafile}" verbosity="DEBUG">
+						<antcontrib:if>
+							<equals arg1="@{dropdatabase}" arg2="true" />
+							<then>
+								<ddlToDatabase schemaFile="@{schemafile}" verbosity="DEBUG">
+									<database url="@{jdbcstring}" driverClassName="@{class}" username="@{username}" password="@{password}" />
+									<dropDatabase failonerror="false"/>
+								</ddlToDatabase>
+							</then>
+						</antcontrib:if>
+						<antcontrib:if>
+							<equals arg1="@{datafile}" arg2="" />
+							<then>
+								<ddlToDatabase schemaFile="@{schemafile}" verbosity="DEBUG">
+		
+									<database url="@{jdbcstring}" driverClassName="@{class}" username="@{username}" password="@{password}" />
+									<!--
+									<fileset dir="${basedir}">
+										<include name="@{schemafile}" />
+									</fileset>
+									-->
+		
+									<createDatabase failonerror="false"/>
+									<!--
+									<dropDatabase failonerror="false"/>
+									-->
+		
+									<writeSchemaToDatabase />
+								</ddlToDatabase>
+							</then>
+							<else>
+								<ddlToDatabase schemaFile="@{schemafile}" verbosity="DEBUG">
+									<database url="@{jdbcstring}" driverClassName="@{class}" username="@{username}" password="@{password}" />
+									<createDatabase failonerror="false"/>
+									<writeSchemaToDatabase />
+									<writeDataToDatabase datafile="@{datafile}" />
+								</ddlToDatabase>
+							</else>
+						</antcontrib:if>
 
-							<database url="@{jdbcstring}" driverClassName="@{class}" username="@{username}" password="@{password}" />
-							<!--
-							<fileset dir="${basedir}">
-								<include name="@{schemafile}" />
-							</fileset>
-							-->
-
-							<!--
-							<createDatabase failonerror="false"/>
-							<dropDatabase failonerror="false"/>
-							-->
-
-							<writeSchemaToDatabase />
-							<!--
-							<writeDataToDatabase datafile="src/data/data.xml" />
-							-->
-						</ddlToDatabase>
 					</actions>
 				</call>
 			</xmltask>
 		</sequential>
 	</macrodef>
 
-	<macrodef name="export-dsn">
+	<macrodef name="dsn-export">
 		<attribute name="dsn" />
-		<attribute name="schemafile" />
+		<attribute name="schemafile" default="dsn-schema.xml" />
+		<attribute name="datafile" default="" />
 		<sequential>
 			<requires-ext resource="/ext/ddlutils/" />
 			<antcontrib:runtarget target="exists.datasources.xml" />
-			<echo message="importing data (@{schemafile}) for dsn: @{dsn}" />
+			<echo message="exporting schema (@{schemafile}) for dsn: @{dsn}" />
 			<taskdef name="databaseToDdl" classname="org.apache.ddlutils.task.DatabaseToDdlTask" classpathref="data.lib.path" />
 			<xmltask sourcebuffer="datasources.buff">
 				<call path="datasources/*">
 					<param name="name" path="@name" default="datasource" />
 					<param name="blob" path="@blob" default="false" />
 					<param name="clob" path="@clob" default="false" />
-					<param name="class" path="@class" default="org.gjt.mm.mysql.Driver" />
+					<param name="class" path="@class" default="org.mysql.jdbc.Driver" />
 					<param name="host" path="@host" default="localhost" />
 					<param name="port" path="@port" default="3306" />
 					<param name="database" path="@database" default="database" />
@@ -119,23 +142,26 @@
 					<param name="custom" path="@custom" default="autoReconnect=false&amp;zeroDateTimeBehavior=convertToNull&amp;useOldAliasMetadataBehavior=true&amp;CharacterEncoding=UTF-8&amp;allowMultiQueries=false" />
 					<param name="jdbc" path="@jdbc" default="mysql" />
 					<param name="jdbcstring" path="@jdbcstring" default="jdbc:mysql://{host}:{port}/{database}" />
+					<param name="charset" path="@charset" default="UTF-8" />
 					<actions>
 						<echo message="connecting: @{class} @{jdbcstring}" />
-						<databaseToDdl usedelimitedsqlidentifiers="true" modelname="@{database}">
-
-
-							<database url="@{jdbcstring}" driverclassname="@{class}" username="@{username}" password="@{password}" />
-							<!--
-							<fileset dir="${basedir}">
-								<include name="@{schemafile}" />
-							</fileset>
-							-->
-
-							<writeschematofile outputfile="@{schemafile}" />
-							<!--
-							<writedatatofile outputfile="@{schemafile}" encoding="ISO-8859-1" />
-							-->
-						</databaseToDdl>
+						<antcontrib:if>
+							<equals arg1="@{datafile}" arg2="" />
+							<then>
+								<databaseToDdl usedelimitedsqlidentifiers="true" modelname="@{database}">
+									<database url="@{jdbcstring}" driverclassname="@{class}" username="@{username}" password="@{password}" />
+									<writeschematofile outputfile="@{schemafile}" />
+								</databaseToDdl>
+							</then>
+							<else>
+								<databaseToDdl usedelimitedsqlidentifiers="true" modelname="@{database}">
+									<database url="@{jdbcstring}" driverclassname="@{class}" username="@{username}" password="@{password}" />
+									<writeschematofile outputfile="@{schemafile}" />
+									<writedatatofile outputfile="@{datafile}" encoding="@{charset}" />
+								</databaseToDdl>
+							</else>
+						</antcontrib:if>
+						
 					</actions>
 				</call>
 			</xmltask>

@@ -45,7 +45,7 @@ env.rport=22
 			keyfile="${ssh.keyfile}" passphrase="${ssh.passphrase}" trust="true"
 			port="${env.port}" lport="${env.lport}" rport="${env.rport}" rhost="${env.remote_host}">
 			<scp sftp="true" verbose="true"
-				toDir="${ssh.user.name}@localhost:${env.remote_dir}" passphrase="${ssh.passphrase}"
+				toDir="${ssh.user.name}@localhost:${env.remote_dir}/${war.name}.war" passphrase="${ssh.passphrase}"
 				keyfile="${ssh.keyfile}" trust="true" port="${env.lport}">
 				<fileset dir="${src.dir}">
 					<modified />
@@ -60,7 +60,7 @@ env.rport=22
 	<target name="deploy.ssh.scp.dist.to.deploy"  description="scp wrapped with ssh tunnel ${dist.dir} to ${env.remote_host} ${env.remote_dir}">
 	    <path id="libpath">
 	      <pathelement path="${classpath}"/>
-	    	<pathelement path="${sshtunnel.dir}/java/src/sshtunnel/lib/jsch-0.1.41.jar"/>
+	    	<pathelement path="${sshtunnel.dir}/java/sshtunnel/lib/jsch-0.1.41.jar"/>
 	        <fileset dir="${sshtunnel.dir}/lib">
 	          <include name="**/*.jar"/>
 	        </fileset>
@@ -70,14 +70,14 @@ env.rport=22
 			classpathref ="libpath" />
 
 		<property file="${basedir}/sshtunnel.properties" />
-		
+		<echo message="using keyfile: ${ssh.keyfile}" />
 		<sshtunnel host="${env.bastion_host}" username="${ssh.user.name}"
 			keyfile="${ssh.keyfile}" passphrase="${ssh.passphrase}" trust="true"
 			port="${env.port}" lport="${env.lport}" rport="${env.rport}" rhost="${env.remote_host}">
 			<scp sftp="true" verbose="true" failonerror="true"
 				toDir="${ssh.user.name}@localhost:${env.remote_dir}" passphrase="${ssh.passphrase}"
 				keyfile="${ssh.keyfile}" trust="true" port="${env.lport}">
-				<fileset dir="${dist.dir}/">
+				<fileset dir="${dist.dir}">
 					<!-- <modified /> -->
 				</fileset>
 			</scp>
@@ -86,8 +86,8 @@ env.rport=22
 
 
 	<target name="sshtunnel.compile">
-		<mkdir dir="${sshtunnel.dir}/java/bin/sshtunnel" />
-		<javac srcdir="${sshtunnel.dir}/java/src/sshtunnel" destdir="${sshtunnel.dir}/java/bin/sshtunnel"
+		<mkdir dir="${sshtunnel.dir}/java/sshtunnel/bin/sshtunnel" />
+		<javac srcdir="${sshtunnel.dir}/java/sshtunnel/src" destdir="${sshtunnel.dir}/java/sshtunnel/bin/sshtunnel"
 			deprecation="on" source="1.4" />
 	</target>
 
@@ -95,7 +95,7 @@ env.rport=22
 		<echo message="${sshtunnel.dir}"/>
 		<echoproperties prefix="ant"/>
 		<jar destfile="${sshtunnel.dir}/lib/ant-sshtunnel.jar" filesetmanifest="mergewithoutmain">
-			<fileset dir="${sshtunnel.dir}/java/bin/sshtunnel" />
+			<fileset dir="${sshtunnel.dir}/java/sshtunnel/bin/sshtunnel" />
 		</jar>
 	</target>
 

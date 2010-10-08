@@ -2,8 +2,8 @@
 	basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
 	<target name="fileserver.servlet.install">
-		<javac srcdir="${cfdistro.basedir}/java/fileserver/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
-		<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
+		<javac srcdir="${cfdistro.basedir}/java/fileserver/src/servlet" destdir="${war.target.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
+		<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml">
 			<insert path="web-app/servlet[1]" position="before">
 				<![CDATA[
 				  <servlet>>
@@ -44,8 +44,8 @@ max.users=20
 				<actions>
 					<antcontrib:var name="rule.exists" unset="true"/>
 					<echo message="@{virtual}" />
-					<xmltask source="${war.temp.dir}/WEB-INF/urlrewrite.xml"
-						dest="${war.temp.dir}/WEB-INF/urlrewrite.xml">
+					<xmltask source="${war.target.dir}/WEB-INF/urlrewrite.xml"
+						dest="${war.target.dir}/WEB-INF/urlrewrite.xml">
 						<xmlcatalog refId="commonDTDs"/>
 						<copy path="urlrewrite/rule[from='@{virtual}']" attrValue="true" property="rule.exists"/>
 						<print path="urlrewrite/rule[from='@{virtual}']"/>
@@ -77,8 +77,8 @@ max.users=20
 		<element name="args" optional="true" />
 		<sequential>
 					<echo message="@{from}" />
-					<xmltask source="${war.temp.dir}/WEB-INF/urlrewrite.xml"
-						dest="${war.temp.dir}/WEB-INF/urlrewrite.xml">
+					<xmltask source="${war.target.dir}/WEB-INF/urlrewrite.xml"
+						dest="${war.target.dir}/WEB-INF/urlrewrite.xml">
 						<xmlcatalog refId="commonDTDs"/>
 						<copy path="urlrewrite/rule[from='@{from}']" attrValue="true" property="rule.exists"/>
 						<print path="urlrewrite/rule[from='@{from}']"/>

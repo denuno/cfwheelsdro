@@ -72,7 +72,13 @@ public class FileServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_NOT_FOUND); // 404.
             return;
         }
-
+        if(requestedFile.endsWith(".cfm") || requestedFile.endsWith(".cfc")) {
+        	// we will avoid sending inprocessed CFML to the client
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+			//request.getRequestDispatcher("*.cfm").include(request, response);
+			//request.getRequestDispatcher(request.getServletPath() + requestedFile).forward(request, response);
+        	return;
+        }
 		if (file.isDirectory() && !requestedFile.endsWith("/")) {
 			//System.out.println("redir");
 			HttpServletResponse resp = (HttpServletResponse) response;

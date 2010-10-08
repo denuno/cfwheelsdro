@@ -1,20 +1,15 @@
 <div class="item">
 
-	<div class="date">
-		<div>DSTRO</div>
-		<span>01</span>
-	</div>
-	
 	<div class="content">
-	
+
 		<h1><cfoutput>#rc.message#</cfoutput></h1>
 		<div class="body">
 		<cfif structKeyExists(rc, "reload")>
 			<p><strong>The framework cache (and application scope) have been reset.</strong></p>
 		</cfif>
-		<p>Welcome to something kinda nufty.</p>	
+		<p>Welcome to something kinda nufty.</p>
 
-<!--- 
+<!---
 <!-- put in server root -->
 ColdFusion Information - click on struct for  infomation<br>
 <cfoutput>
@@ -86,7 +81,7 @@ macromedia.jdbc.sybase.SybaseDriver">
 		<cfschedule action="run" task="__list">
  --->
 		</div>
-	
+
 	</div>
 
 </div>

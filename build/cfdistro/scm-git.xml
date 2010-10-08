@@ -12,14 +12,14 @@
 					<equals arg1="@{command}" arg2="pull" />
 				</or>
 				<then>
-					<echo message="Using system Git @{command}" />
-					<exec executable="git" dir="@{dir}" outputproperty="git.results" failifexecutionfails="false">
+					<echo message="Using system Git - command: @{command}" />
+					<exec executable="git" dir="@{dir}" outputproperty="git.results" failifexecutionfails="true">
 						<arg value="@{command}" />
 						<args />
 					</exec>
 				</then>
 				<else>
-					<echo message="JGit @{command}" />
+					<echo message="JGit - command: @{command}" />
 		            <java classname="org.eclipse.jgit.pgm.Main" classpathref="build.lib.path" fork="true" dir="@{dir}" outputproperty="git.results">
 						<arg value="@{command}" />
 						<args />
@@ -33,23 +33,49 @@
 	<macrodef name="git-export">
 		<attribute name="repository" />
 		<attribute name="dest" />
+		<attribute name="path" default="/" />
+		<attribute name="tag" default="HEAD" />
 		<sequential>
 			<mkdir dir="@{dest}" />
-			<git command="archive" dir="@{dest}">
-				<args>
-					<!-- <arg value="-a" /> -->
-					<arg value="--format" />
-					<arg value="zip" />
-					<arg value="--output" />
-					<arg value="src.zip" />
-					<arg value="--remote" />
-					<arg value="@{repository}" />
-					<arg value="HEAD" />
-					<arg value="-0" />
-				</args>
-			</git>
-			<unzip src="@{dest}/src.zip" dest="@{dest}" />
-			<delete file="@{dest}/src.zip"/>
+			<antcontrib:if>
+				<contains string="@{repository}" substring="github" casesensitive="false" />
+				<then>
+					<antcontrib:var name="git.temp" unset="true" />
+					<property name="git.temp" location="${temp.dir}/git-temp" />
+					<echo message="no .git dir, let us try to get one- this may take a bit..." />
+					<delete dir="${git.temp}"/>
+					<mkdir dir="${git.temp}"/>
+					<git-clone repository="@{repository}" dest="${git.temp}" />
+					<copy todir="@{dest}">
+						<fileset dir="${git.temp}"/>
+					</copy>
+					<delete dir="${git.temp}"/>
+				</then>
+				<else>
+					<git command="archive" dir="@{dest}">
+						<args>
+							<!-- <arg value="-a" /> -->
+							<arg value="--format" />
+							<arg value="zip" />
+							<arg value="--output" />
+							<arg value="src.zip" />
+							<arg value="--remote" />
+							<arg value="@{repository}" />
+							<arg value="@{tag}" />
+							<arg value="-0" />
+						</args>
+					</git>
+					<unzip src="@{dest}/src.zip" dest="@{dest}">
+				        <patternset>
+				            <include name="@{path}"/>
+				        </patternset>
+						<regexpmapper handledirsep="yes"
+						from="@{path}(.*)"
+						to="\1" />
+					</unzip>
+					<delete file="@{dest}/src.zip"/>
+				</else>
+			</antcontrib:if>
 		</sequential>
 	</macrodef>
 
@@ -61,6 +87,19 @@
 				<args>
 					<arg value="@{repository}" />
 					<arg value="@{dest}" />
+				</args>
+			</git>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="git-checkout">
+		<attribute name="repository" />
+		<attribute name="branch" />
+		<sequential>
+			<git command="branch" dir="@{repository}">
+				<args>
+					<arg value="-r" />
+					<arg value="@{branch}" />
 				</args>
 			</git>
 		</sequential>
@@ -86,9 +125,11 @@
 				<param name="dest" path="@dest" default="NONE" />
 				<param name="type" path="@type" default="NONE" />
 				<param name="uri" path="@uri" default="NONE" />
+				<param name="path" path="@path" default="" />
+				<param name="tag" path="@tag" default="HEAD" />
 				<actions>
-					<echo message="importing @{uri} to src: ${src.dir}/@{dest}" />
-					<git-export repository="@{uri}" dest="${src.dir}/@{dest}" />
+					<echo message="importing @{uri} @{tag} to src: ${src.dir}/@{dest}" />
+					<git-export repository="@{uri}" dest="${src.dir}/@{dest}" path="@{path}" tag="@{tag}"/>
 				</actions>
 			</call>
 		</xmltask>
@@ -103,6 +144,7 @@
 				<param name="dest" path="@dest" default="NONE" />
 				<param name="type" path="@type" default="NONE" />
 				<param name="uri" path="@uri" default="NONE" />
+				<param name="branch" path="@branch" default="NONE" />
 				<actions>
 					<available file="@dest/.git" type="dir" property="exists.git.dir" />
 					<antcontrib:if>
@@ -118,6 +160,7 @@
 							<echo message="no .git dir, let us try to get one- this may take a bit..." />
 							<delete dir="${temp.dir}/git-temp"/>
 							<git-clone repository="@{uri}" dest="${temp.dir}/git-temp" />
+							<git-checkout repository="${temp.dir}/git-temp" branch="@{branch}"/>
 							<copy todir="@{dest}">
 								<fileset dir="${temp.dir}/git-temp" excludes="${temp.dir}/git-temp/build/**" />
 							</copy>

@@ -1,9 +1,9 @@
 <project name="tests" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 
-	<property name="tests.run.url" value="http://localhost:${runwar.port}/${war.name}/tests/run.cfm" />
+	<property name="tests.run.url" value="http://localhost:${server.port.http}/${war.name}/tests/run.cfm" />
 	<target name="tests.run">
-		<mkdir dir="${war.temp.dir}" />
-		<property name="testresult.file" value="${war.temp.dir}/test.results.html/" />
+		<mkdir dir="${war.target.dir}" />
+		<property name="testresult.file" value="${war.target.dir}/test.results.html/" />
 		<sequential>
 			<echo message="running tests: ${tests.run.url}" />
 			<antcontrib:trycatch property="foo" reference="bar">
@@ -45,32 +45,32 @@
 	</target>
 
 	<target name="tests.start.run">
-		<mkdir dir="${war.temp.dir}" />
-		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />
+		<mkdir dir="${war.target.dir}" />
+		<property name="testresult.file" value="${war.target.dir}/test.results.html" />
 		<sequential>
-			<antcontrib:runtarget target="runwar.start.background" />
+			<antcontrib:runtarget target="server.start" />
 			<antcontrib:runtarget target="tests.run" />
 		</sequential>
 	</target>
 
 	<target name="tests.start.run.stop">
-		<mkdir dir="${war.temp.dir}" />
-		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />
+		<mkdir dir="${war.target.dir}" />
+		<property name="testresult.file" value="${war.target.dir}/test.results.html" />
 		<sequential>
 			<antcontrib:runtarget target="tests.start.run" />
-			<antcontrib:runtarget target="runwar.stop" />
+			<antcontrib:runtarget target="server.stop" />
 		</sequential>
 	</target>
 
 
 	<target name="tests.build.start.run.stop">
-		<mkdir dir="${war.temp.dir}" />
-		<property name="testresult.file" value="${war.temp.dir}/test.results.html" />
+		<mkdir dir="${war.target.dir}" />
+		<property name="testresult.file" value="${war.target.dir}/test.results.html" />
 		<sequential>
 			<antcontrib:runtarget target="project.update" />
-			<antcontrib:runtarget target="build.localdev.start" />
+			<antcontrib:runtarget target="build.start" />
 			<antcontrib:runtarget target="tests.run" />
-			<antcontrib:runtarget target="runwar.stop" />
+			<antcontrib:runtarget target="server.stop" />
 		</sequential>
 	</target>
 
@@ -95,8 +95,8 @@
 	</target>
 
 	<target name="tests.build.start.run.stop.ifnew">
-		<mkdir dir="${war.temp.dir}" />
-		<property name="testresult.file" value="${war.temp.dir}/test.results.html/" />
+		<mkdir dir="${war.target.dir}" />
+		<property name="testresult.file" value="${war.target.dir}/test.results.html/" />
 		<sequential>
 			<antcontrib:runtarget target="project.update" />
 			<antcontrib:if>
@@ -107,7 +107,7 @@
 				<else>
 					<echo message="Revisions differ, running tests" />
 					<sequential>
-						<antcontrib:runtarget target="build.localdev" />
+						<antcontrib:runtarget target="build" />
 						<antcontrib:runtarget target="tests.build.start.run.stop" />
 					</sequential>
 				</else>

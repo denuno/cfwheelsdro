@@ -1,10 +1,10 @@
 <project name="mappings-filter" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
 	<target name="mappings.filter.install">
 		<echo message="compiling web filter" />
-		<delete dir="${war.temp.dir}/WEB-INF/classes"/>
-		<mkdir dir="${war.temp.dir}/WEB-INF/classes"/>
-		<javac srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
-		<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
+		<delete dir="${war.target.dir}/WEB-INF/classes"/>
+		<mkdir dir="${war.target.dir}/WEB-INF/classes"/>
+		<javac srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.target.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
+		<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml">
 			<insert path="web-app/servlet[1]" position="before">
 				<![CDATA[
 					<!-- railo file servlet -->
@@ -48,10 +48,10 @@
 		<element name="args" optional="true" />
 		<sequential>
 			<echo message="compiling web filter" />
-			<delete dir="${war.temp.dir}/WEB-INF/classes"/>
-			<mkdir dir="${war.temp.dir}/WEB-INF/classes"/>
-			<javac srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.temp.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
-			<xmltask source="${war.temp.dir}/WEB-INF/web.xml" dest="${war.temp.dir}/WEB-INF/web.xml">
+			<delete dir="${war.target.dir}/WEB-INF/classes"/>
+			<mkdir dir="${war.target.dir}/WEB-INF/classes"/>
+			<javac srcdir="${cfdistro.basedir}/java/src/servlet" destdir="${war.target.dir}/WEB-INF/classes" classpath="${cfdistro.basedir}/lib/${jetty-runner.jar}" />
+			<xmltask source="${war.target.dir}/WEB-INF/web.xml" dest="${war.target.dir}/WEB-INF/web.xml">
 				<xmlcatalog refId="commonDTDs"/>
 				<insert path="web-app/servlet[1]" position="before">
 					<![CDATA[

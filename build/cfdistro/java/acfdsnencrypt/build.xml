@@ -24,7 +24,7 @@
 		<delete dir="${acfdsnencrypt.basedir}/bin" />
 	</target>
 
-	<target name="acfdsnencrypt.encrypt" description="encrypts a string for use with acf datasrouce" depends="acfdsnencrypt.jar">
+	<target name="acfdsnencrypt.encrypt" depends="acfdsnencrypt.jar">
 		<antcontrib:var name="dsn.password.encrypted" unset="true" />		
 		<java jar="${cfdistro.basedir}/lib/acfdsnencrypt.jar" fork="true" classpathref="acfdsnencrypt.lib.path" outputproperty="dsn.password.encrypted">
 			<arg value="${dsn.password.plaintext}" />
